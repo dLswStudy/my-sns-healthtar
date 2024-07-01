@@ -6,9 +6,8 @@ export const api_user = {
     signUp:async (data:signupSchema)=>{
         try {
             const userCredential = createUserWithEmailAndPassword(auth, data.email, data.password)
-
+            console.log('signIn Success')
         }catch (error){
-            console.error(error);
             throw error
         }
     },
@@ -22,7 +21,6 @@ export const api_user = {
             console.log(userCredential);
 
         } catch (error) {
-            console.error(error);
             throw error
         }
     }

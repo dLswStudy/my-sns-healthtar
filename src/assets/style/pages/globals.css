@@ -11,3 +11,6 @@ img{
 a{
     text-decoration: none;
 }
+.nextjs-toast-errors-parent {
+    display: none;
+}
