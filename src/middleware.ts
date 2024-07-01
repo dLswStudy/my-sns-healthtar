@@ -3,7 +3,7 @@ import {auth} from "@/firebase/firebase.config";
 
 export function middleware(request: NextRequest) {
     const user = auth.currentUser
-    console.log("user = ", user);
+    console.log("api_user = ", user);
     const isAuthenticated = Boolean(user)
 
     const url = request.nextUrl.clone();

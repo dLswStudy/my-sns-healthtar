@@ -13,6 +13,9 @@ import {
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import Link from "next/link";
+import {api_user} from "@/api/api_user";
+import {redirect} from "next/navigation";
+import userStore from "@/stores/client/userStore";
 
 const formSchema = z.object({
     email: z.string().email("올바른 형식의 이메일을 입력해주세요."),
@@ -21,7 +24,12 @@ const formSchema = z.object({
 export type loginSchema = z.infer<typeof formSchema>
 
 export default function LoginForm() {
-    const form = useForm<z.infer<typeof formSchema>>({
+    const {errorMsg, setErrorMsg} = userStore()
+    const handleFocus = (event: any) => {
+        setErrorMsg('','signIn')
+    }
+    // @ts-ignore
+    const form = useForm<loginSchema>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             email: "",
@@ -30,13 +38,25 @@ export default function LoginForm() {
     })
     function onSubmit(data: loginSchema) {
         console.log("data = ", data);
+        api_user.signIn(data)
+            .then(()=>{
+                redirect('/')
+            })
+            .catch((error)=>{
+                let erMsg = ''
+                if (error.code == 'auth/invalid-credential')
+                    erMsg = '이메일 주소와 비밀번호를 다시 확인해주세요.'
+                else if (error.code == 'auth/email-already-in-use')
+                    erMsg = '이미 로그인 되어 있습니다.'
 
+                setErrorMsg(erMsg,'signIn')
+            })
     }
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="login__form space-y-8 w-96">
-                <div className="login__form__title">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="sign__form space-y-8 w-96">
+                <div className="sign__form__title">
                     <div className="brandNm">헬스타<span>★</span></div>
                 </div>
                 <FormField
@@ -48,6 +68,7 @@ export default function LoginForm() {
                                 <Input
                                     placeholder="이메일"
                                     className="tw-input tw-w-full"
+                                    onFocus={handleFocus}
                                     {...field}
                                 />
                             </FormControl>
@@ -66,6 +87,7 @@ export default function LoginForm() {
                                     placeholder="비밀번호"
                                     className="tw-input tw-w-full"
                                     type="password"
+                                    onFocus={handleFocus}
                                     {...field}
                                 />
                             </FormControl>
@@ -74,11 +96,12 @@ export default function LoginForm() {
                     )}
                 >
                 </FormField>
-                <div className="login__form__buttonArea1 flex justify-center">
+                <div className="sign__form__buttonArea1 flex justify-center">
                     <Button type="submit">로그인</Button>
                 </div>
-                <div className="login__form__buttonArea2 flex justify-end">
-                    <Link href={'/'} className={'sign-up-button'}>회원가입</Link>
+                {errorMsg._signIn && <FormMessage>{errorMsg._signIn}</FormMessage>}
+                <div className="sign__form__buttonArea2 flex justify-end">
+                    <Link href={'/signUp'} className={'other-page-button'}>가입하기</Link>
                 </div>
             </form>
         </Form>
