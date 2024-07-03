@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import {auth} from "@/firebase/firebase.config";
 
 export function middleware(request: NextRequest) {
+    console.log('%cmiddleware',"color:blue")
     const user = auth.currentUser
     console.log("api_user = ", user);
     const isAuthenticated = Boolean(user)

@@ -14,7 +14,7 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import Link from "next/link";
 import {api_user} from "@/api/api_user";
-import {redirect} from "next/navigation";
+import {useRouter} from "next/navigation";
 import userStore from "@/stores/client/userStore";
 
 const formSchema = z.object({
@@ -25,6 +25,7 @@ export type loginSchema = z.infer<typeof formSchema>
 
 export default function LoginForm() {
     const {errorMsg, setErrorMsg} = userStore()
+    const router = useRouter();
     const handleFocus = (event: any) => {
         setErrorMsg('','signIn')
     }
@@ -40,7 +41,9 @@ export default function LoginForm() {
         console.log("data = ", data);
         api_user.signIn(data)
             .then(()=>{
-                redirect('/')
+                console.log('%conSubmit',"color:blue")
+                // fetch('/')
+                router.replace('/');
             })
             .catch((error)=>{
                 let erMsg = ''

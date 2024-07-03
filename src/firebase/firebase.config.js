@@ -1,6 +1,12 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import {initializeApp} from "firebase/app";
+import {getFirestore} from 'firebase/firestore';
+import {
+    getAuth,
+    sendSignInLinkToEmail,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword
+} from 'firebase/auth';
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -17,7 +23,19 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+const firestore = getFirestore(app);
+const bucketName = 'healthtar-storage'
+const actionCodeSettings = {
+    url: process.env.NEXT_PUBLIC_APP_DOMAIN,
+    handleCodeInApp: true,
+    dynamicLinkDomain: process.env.NEXT_PUBLIC_APP_DOMAIN
+};
+
 export {
+    firestore,
+    bucketName,
+    actionCodeSettings,
+    sendSignInLinkToEmail,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword
 }
