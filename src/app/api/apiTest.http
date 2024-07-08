@@ -1,0 +1,39 @@
+### 1. currtUser email
+GET {{domain}}/api/sign/chkEmail
+
+### 2. chkEmailVerified
+GET {{domain}}/api/sign/chkEmailVerified
+
+### 3. createUserTest
+POST {{domain}}/api/sign/createUser
+Content-Type: application/json
+
+{
+  "email": "hd98lsu@naver.com",
+  "password": "qwer1234@"
+}
+
+### 3.1 signInUser Test
+POST {{domain}}/api/sign/signInUser
+Content-Type: application/json
+
+{
+  "email": "hd98lsu@naver.com",
+  "password": "gpftmxk123"
+}
+
+### 3.2 signOut Test
+GET {{domain}}/api/sign/signOut
+
+### 4. delUser
+GET {{domain}}/api/sign/deleteUser
+
+### 5. sendEmailVerification
+POST {{domain}}/api/sign/verifyEmail
+Content-Type: application/json
+
+{
+  "email": "hd98lsu@naver.com",
+  "password": "qwer1234@"
+}
+

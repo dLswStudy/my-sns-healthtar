@@ -1,10 +1,5 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import {
-  actionCodeSettings,
-  auth,
-  sendSignInLinkToEmail,
-  signInWithEmailAndPassword} from "@/firebase/firebase.config";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -34,5 +29,47 @@ export function validatePassword(testString) {
     return true;
   }
   return false;
+}
+
+export function generateTemporaryPassword(length) {
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    password += charset[randomIndex];
+  }
+  return password;
+}
+
+export async function errorHandle(res){
+  const error = {isError: false, code:500,message:''}
+  if (!res.ok) {
+    error.isError = true
+    const errorJson = await res.json();
+    switch (res.status) {
+      case 404:
+        error.code = res.status
+        error.message = 'Resource not found'
+        break;
+      case 500:
+        error.code = errorJson?.code
+        switch (errorJson?.code) {
+          case 'auth/invalid-credential':
+            error.message = '이메일 주소와 비밀번호를 다시 확인해주세요.';
+            break;
+          case 'auth/email-already-in-use':
+            error.message = '이미 존재하는 이메일입니다.';
+            break;
+          default:
+            error.message = '서버에서 에러가 발생하였습니다. 잠시 후 다시 시도해주세요.';
+        }
+        break;
+      default:
+        error.code = res.status
+        error.message = errorJson?.message || '에러가 발생하였습니다. 잠시 후 다시 시도해주세요.'
+    }
+  }
+
+  return error
 }
 

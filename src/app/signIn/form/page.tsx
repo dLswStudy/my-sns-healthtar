@@ -13,21 +13,23 @@ import {
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import Link from "next/link";
-import {api_user} from "@/api/api_user";
 import {useRouter} from "next/navigation";
 import userStore from "@/stores/client/userStore";
+import {errorHandle} from "@/lib/utils";
 
 const formSchema = z.object({
     email: z.string().email("올바른 형식의 이메일을 입력해주세요."),
-    password: z.string()
+    password: z.string(),
 })
 export type loginSchema = z.infer<typeof formSchema>
-
-export default function LoginForm() {
-    const {errorMsg, setErrorMsg} = userStore()
+export type loginSchemaV2 = loginSchema & {
+    action: string
+}
+export default function SignInForm() {
+    const {apiErrorMsg, setApiErrorMsg} = userStore()
     const router = useRouter();
-    const handleFocus = (event: any) => {
-        setErrorMsg('','signIn')
+    const handleClick = (event: any) => {
+        setApiErrorMsg('', 'signIn')
     }
     // @ts-ignore
     const form = useForm<loginSchema>({
@@ -37,22 +39,24 @@ export default function LoginForm() {
             password: "",
         }
     })
-    function onSubmit(data: loginSchema) {
-        console.log("data = ", data);
-        api_user.signIn(data)
-            .then(()=>{
-                console.log('%conSubmit',"color:blue")
-                // fetch('/')
+    async function onSubmit(data: loginSchema) {
+        const userData: loginSchemaV2 = {...data, action:'in'}
+        await fetch('/api/sign?_=in', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(userData)
+        })
+            .then(async res => {
+                const errorhandle = await errorHandle(res)
+                if (errorhandle.isError) {
+                    console.log("errorhandle = ", errorhandle);
+                    setApiErrorMsg(errorhandle.message, 'signIn')
+                    return
+                }
                 router.replace('/');
             })
-            .catch((error)=>{
-                let erMsg = ''
-                if (error.code == 'auth/invalid-credential')
-                    erMsg = '이메일 주소와 비밀번호를 다시 확인해주세요.'
-                else if (error.code == 'auth/email-already-in-use')
-                    erMsg = '이미 로그인 되어 있습니다.'
-
-                setErrorMsg(erMsg,'signIn')
+            .catch((error) => {
+                setApiErrorMsg(error.message, 'signIn')
             })
     }
 
@@ -71,7 +75,7 @@ export default function LoginForm() {
                                 <Input
                                     placeholder="이메일"
                                     className="tw-input tw-w-full"
-                                    onFocus={handleFocus}
+                                    onClick={handleClick}
                                     {...field}
                                 />
                             </FormControl>
@@ -90,7 +94,7 @@ export default function LoginForm() {
                                     placeholder="비밀번호"
                                     className="tw-input tw-w-full"
                                     type="password"
-                                    onFocus={handleFocus}
+                                    onClick={handleClick}
                                     {...field}
                                 />
                             </FormControl>
@@ -102,7 +106,7 @@ export default function LoginForm() {
                 <div className="sign__form__buttonArea1 flex justify-center">
                     <Button type="submit">로그인</Button>
                 </div>
-                {errorMsg._signIn && <FormMessage>{errorMsg._signIn}</FormMessage>}
+                {apiErrorMsg._signIn && <FormMessage>{apiErrorMsg._signIn}</FormMessage>}
                 <div className="sign__form__buttonArea2 flex justify-end">
                     <Link href={'/signUp'} className={'other-page-button'}>가입하기</Link>
                 </div>

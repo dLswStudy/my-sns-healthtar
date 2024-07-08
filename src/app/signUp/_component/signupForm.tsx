@@ -10,84 +10,187 @@ import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
 import userStore from "@/stores/client/userStore";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
-import {api_user} from "@/api/api_user";
-import {validatePassword} from "@/lib/utils";
+import {errorHandle, validatePassword} from "@/lib/utils";
 import {useRouter} from "next/navigation";
 import {getDownloadURL, getStorage, ref, uploadBytes} from "@firebase/storage";
-import {bucketName} from "@/firebase/firebase.config";
+import {bucketName} from "@/app.config";
+import {useEffect, useState} from "react";
+import {storage} from "@/firebase/firebase.client.config";
 
 const MAX_FILE_SIZE = 2000000; // 2MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/jpg"];
 
 const formSchema = z.object({
-    email: z.string().email("올바른 형식의 이메일을 입력해주세요."),
+    email: z.string().min(1, '이메일을 입력해주세요.').email("올바른 형식의 이메일을 입력해주세요."),
     profileImage: z.any()
-        .refine(file => ACCEPTED_IMAGE_TYPES.includes(file.type), "jpg/jpeg, png 파일만 업로드 가능합니다.")
-        .refine(file => file.size <= MAX_FILE_SIZE, "파일 크기는 최대 2MB입니다."),
+        .refine(file => file instanceof File, "프로필 이미지를 선택해주세요.")
+        .refine(file => ACCEPTED_IMAGE_TYPES.includes(file?.type), "jpg/jpeg, png 파일만 업로드 가능합니다.")
+        .refine(file => file?.size <= MAX_FILE_SIZE, "파일 크기는 최대 2MB입니다."),
     nickName: z.string().regex(/^(?!.*[._-]{2})[가-힣a-zA-Z]{1}[가-힣a-zA-Z0-9._-]{0,28}[가-힣a-zA-Z0-9]{1}$/),
+    helloword: z.string().max(50, '최대 50자까지 입력 할 수 있습니다.'),
     name: z.string().regex(/^[가-힣a-zA-Z]{2,50}$/),
     password: z.string().refine(validatePassword, {
         message: "비밀번호 생성 가이드라인에 따라 다시 작성해주세요."
     }),
-    gender: z.string(),
+    gender: z.string().refine(g => g.length > 0, '성별을 선택하세요.'),
     birth: z.string().date(),
+    isEmailVerified: z.boolean().refine(bool => bool, "이메일 인증을 완료해주세요.")
 })
 type signupSchema = z.infer<typeof formSchema>
 export type signupSchemaV2 = signupSchema & {
-    profileImageUrl: string
+    profileImageUrl: string,
+    action: string
 }
 const years = Array.from({length: 100}, (_, i) => '' + (new Date().getFullYear() - i));
 const months = Array.from({length: 12}, (_, i) => i + 1 < 10 ? '0' + (i + 1) : '' + (i + 1));
 const days = Array.from({length: 31}, (_, i) => i + 1 < 10 ? '0' + (i + 1) : '' + (i + 1));
 
 export default function SignupForm() {
-    const {errorMsg, setErrorMsg} = userStore()
+    const {
+        apiErrorMsg,
+        setApiErrorMsg,
+    } = userStore()
+    const [timeLeft, setTimeLeft] = useState(180); // 초기 시간 180초 (3분)
+    const [buttonText, setButtonText] = useState("인증하기");
+    const [buttonDisabled, setButtonDisabled] = useState(false);
     const router = useRouter();
-    const handleFocus = (event: any) => {
-        setErrorMsg('', 'signUp')
+
+    // 임시로 생성된 계정 있으면 삭제
+    const deleteTemporalAccount = async () => fetch('/api/sign/deleteTemporalAccount');
+    useEffect(() => {
+        console.log('siginup mounted')
+        deleteTemporalAccount()
+    }, []);
+
+    const handleClick = (e: any) => {
+        form.clearErrors(e.target.name)
+        if (e.target.name == 'email')
+            form.clearErrors('isEmailVerified')
     }
     const form = useForm<signupSchema>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             email: "",
             profileImage: undefined,
+            helloword: '',
             nickName: "",
             name: "",
             password: "",
-            gender: "",
-            birth: `yyyy-mm-dd`
+            gender: '',
+            birth: `yyyy-mm-dd`,
+            isEmailVerified: false
         }
     })
 
     const uploadImage = async (file: File, nickname: string): Promise<string> => {
-        const storage = getStorage();
         const storageRef = ref(storage, `${bucketName}/profile-images/${nickname}`);
         await uploadBytes(storageRef, file);
         return await getDownloadURL(storageRef);
     }
 
+    const formatTime = (time: number) => {
+        console.log("time = ", time);
+        const minutes = Math.floor(time / 60);
+        const seconds = time % 60;
+        const timeText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        console.log("timeText = ", timeText);
+        setButtonText(timeText)
+    };
+
+
+    async function verifyEmail(email: string) {
+        const isErrorClear = await form.trigger('email')
+        if (!isErrorClear) {
+            return
+        }
+        // 임의 비번으로 등록->로그인->인증메일전송
+        await fetch('/api/sign/verifyEmail', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({email})
+        }).then(async res => {
+            const errorhandle = await errorHandle(res)
+            if (errorhandle.isError) {
+                console.log("errorhandle.code = ", errorhandle.code);
+                if (errorhandle.code != 409)
+                    await deleteTemporalAccount()
+                form.setError('email', {type: 'manual', message: errorhandle.message})
+                return
+            }
+
+            // 버튼 클릭 시 타이머 시작
+            if (buttonText === "인증하기") {
+                setButtonDisabled(true);
+                setTimeLeft(181);
+            }
+            let intervalAPI;
+            const intervalTime = setInterval(() => {
+                setTimeLeft(currTime => {
+                    if (currTime <= 1) {  // 이 부분을 수정하여 0이 되었을 때 종료되도록 처리
+                        clearInterval(intervalAPI);
+                        clearInterval(intervalTime);
+                        setButtonText("인증하기");
+                        setButtonDisabled(false);
+                        console.log('3분 경과, 검증 종료');
+                        deleteTemporalAccount()
+                        return 0;  // 타이머 종료 시 0으로 리셋
+                    }
+                    const newTime = currTime - 1;
+                    formatTime(newTime);  // 먼저 시간을 감소시킨 후 포맷 함수 호출
+                    return newTime;
+                });
+            }, 1000);
+
+            intervalAPI = setInterval(async () => {
+                // 사용자가 임의의 시간에 인증메일 링크 클릭
+                // -> 서버가 알 수 없음.
+                // -> 주기적 확인: 1초마다 [임시계정 로그인->CurrentUser.emailVerified 확인]
+                const response = await fetch('/api/sign/chkEmailVerifiedForSignUp');
+                const emailVrfd = (await response.json()).emailVerified
+                console.log("auth.currentUser?.emailVerified = ", emailVrfd);
+                if (emailVrfd) {
+                    clearInterval(intervalAPI);
+                    clearInterval(intervalTime);
+                    alert('이메일이 인증되었습니다.');
+                    setButtonText("인증완료");
+                    setButtonDisabled(true);
+                    form.setValue('isEmailVerified', true)
+                    form.setError('email', {type: 'manual', message: ''})
+                } else {
+                    console.log('이메일 인증 대기 중...');
+                }
+            }, 1000);  // 1초마다 실행
+
+        }).catch(error => {
+            deleteTemporalAccount()
+            form.setError('email', {type: 'manual', message: error.message})
+        })
+
+    }
+
     async function onSubmit(data: signupSchema) {
         console.log("data = ", data);
         const profileImageUrl = await uploadImage(data.profileImage as File, data.nickName);
-        const userData: signupSchemaV2 = {...data, profileImageUrl}
-        console.log("profileImageUrl = ", profileImageUrl);
-
-        await fetch('/api/sign?_=up', {
+        const action = 'up'
+        const userData: signupSchemaV2 = {...data, profileImageUrl, action}
+        let erMsg = ''
+        await fetch('/api/sign', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(userData)
-        }).then(() => {
-            router.push('/login');
-        }).catch((error) => {
-            console.log(error)
-            let erMsg = ''
-            if (error.code == 'auth/invalid-credential')
-                erMsg = '이메일 주소와 비밀번호를 다시 확인해주세요.'
-            else if (error.code == 'auth/email-already-in-use')
-                erMsg = '이미 로그인 되어 있습니다.'
+        }).then(async res => {
+            const errhandle = await errorHandle(res)
+            if (errhandle.isError) {
+                erMsg = errhandle.message
+                return
+            }
 
-            setErrorMsg(erMsg, 'signUp')
+            console.log('sign up success')
+            router.push('/signIn/form');
+        }).catch(err => {
+            erMsg = '에러가 발생하였습니다. 잠시 후 다시 시도해주세요.'
         })
+        setApiErrorMsg(erMsg, 'signUp')
     }
 
     return (
@@ -101,19 +204,40 @@ export default function SignupForm() {
                     name="email"
                     render={({field}) => (
                         <FormItem>
-                            <FormControl>
-                                <Input
-                                    placeholder="이메일"
-                                    className="tw-input tw-w-full"
-                                    onFocus={handleFocus}
-                                    {...field}
-                                />
-                            </FormControl>
-                            <FormMessage/>
+                            <div className={"flex"}>
+                                <FormControl>
+                                    <Input
+                                        placeholder="이메일"
+                                        className="tw-input tw-w-full"
+                                        onClick={handleClick}
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <Button type='button' className="ml-1"
+                                        onClick={() => verifyEmail(field.value)}
+                                        disabled={!Boolean(field.value) || Boolean(form.formState.errors.email) || buttonDisabled}
+                                >{buttonText}</Button>
+                            </div>
+                            <FormMessage>{form.formState.errors.isEmailVerified && form.formState.errors.isEmailVerified.message}</FormMessage>
                         </FormItem>
                     )}
-                >
-                </FormField>
+                />
+                <FormField
+                    control={form.control}
+                    name="isEmailVerified"
+                    render={({field}) => (
+                        <FormItem>
+                            <FormControl>
+                                <Input
+                                    type="checkbox"
+                                    checked={field.value}
+                                    className="hidden"
+                                    onChange={e => field.onChange(e.target.checked)}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
                 <FormField
                     control={form.control}
                     name="profileImage"
@@ -123,6 +247,7 @@ export default function SignupForm() {
                                 <Input
                                     type="file"
                                     accept="image/*"
+                                    onClick={handleClick}
                                     onChange={(e) => field.onChange(e.target.files?.[0])}
                                     className="tw-input tw-w-full"
                                 />
@@ -141,12 +266,31 @@ export default function SignupForm() {
                                 <Input
                                     placeholder="닉네임"
                                     className="tw-input tw-w-full"
-                                    onFocus={handleFocus}
+                                    onClick={handleClick}
                                     {...field}
                                 />
                             </FormControl>
                             <FormDescription>ⓘ 한글 또는 영문 2~30자, 첫글자 제외하고 숫자 사용가능, 중간에 특수문자 3개(.-_) 연속되지 않게
                                 사용가능</FormDescription>
+                            <FormMessage/>
+                        </FormItem>
+                    )}
+                >
+                </FormField>
+                <FormField
+                    control={form.control}
+                    name="helloword"
+                    render={({field}) => (
+                        <FormItem>
+                            <FormControl>
+                                <Input
+                                    placeholder="인사말"
+                                    className="tw-input tw-w-full"
+                                    onClick={handleClick}
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormDescription>ⓘ 최대 50자</FormDescription>
                             <FormMessage/>
                         </FormItem>
                     )}
@@ -161,7 +305,7 @@ export default function SignupForm() {
                                 <Input
                                     placeholder="이름"
                                     className="tw-input tw-w-full"
-                                    onFocus={handleFocus}
+                                    onClick={handleClick}
                                     {...field}
                                 />
                             </FormControl>
@@ -181,7 +325,7 @@ export default function SignupForm() {
                                     placeholder="비밀번호"
                                     className="tw-input tw-w-full"
                                     type="password"
-                                    onFocus={handleFocus}
+                                    onClick={handleClick}
                                     {...field}
                                 />
                             </FormControl>
@@ -198,22 +342,25 @@ export default function SignupForm() {
                     name="gender"
                     control={form.control}
                     render={({field}) => (
-                        <div className={'flex items-center space-x-10'}>
-                            <FormLabel className={'text-slate-600'}>성별:</FormLabel>
-                            <FormItem>
-                                <FormControl>
-                                    <ToggleGroup
-                                        type="single"
-                                        variant="outline"
-                                        value={field.value}
-                                        onValueChange={(value) => field.onChange(value)}>
-                                        <ToggleGroupItem value="male">남</ToggleGroupItem>
-                                        <ToggleGroupItem value="female">여</ToggleGroupItem>
-                                    </ToggleGroup>
-                                </FormControl>
-                            </FormItem>
-                        </div>)}
-                >
+                        <>
+                            <div className={'flex items-center space-x-10'}>
+                                <FormLabel className={'text-slate-600'}>성별:</FormLabel>
+                                <FormItem>
+                                    <FormControl>
+                                        <ToggleGroup
+                                            type="single"
+                                            variant="outline"
+                                            value={field.value}
+                                            onValueChange={(value) => field.onChange(value)}>
+                                            <ToggleGroupItem value={'1'}>남</ToggleGroupItem>
+                                            <ToggleGroupItem value={'0'}>여</ToggleGroupItem>
+                                        </ToggleGroup>
+                                    </FormControl>
+                                </FormItem>
+                                <FormMessage/>
+                            </div>
+                        </>
+                    )}>
                 </FormField>
                 <FormField
                     control={form.control}
@@ -226,15 +373,10 @@ export default function SignupForm() {
                                 <FormControl>
                                     <div className="flex space-x-3">
                                         <Select
-                                            onOpenChange={handleFocus}
                                             onValueChange={(val) => {
-                                                console.log("field = ", field);
                                                 const ymd = field.value.split('-')
                                                 ymd[0] = val
-                                                console.log("ymd = ", ymd);
-                                                console.log("ymd.join('') = ", ymd.join(''));
                                                 field.onChange(ymd.join('-'));
-                                                console.log("c field = ", field);
                                             }}
                                         >
                                             <SelectTrigger className="w-[80px] tw-select">
@@ -247,7 +389,6 @@ export default function SignupForm() {
                                             </SelectContent>
                                         </Select>
                                         <Select
-                                            onOpenChange={handleFocus}
                                             onValueChange={(val) => {
                                                 const ymd = field.value.split('-')
                                                 ymd[1] = val
@@ -264,7 +405,6 @@ export default function SignupForm() {
                                             </SelectContent>
                                         </Select>
                                         <Select
-                                            onOpenChange={handleFocus}
                                             onValueChange={(val) => {
                                                 const ymd = field.value.split('-')
                                                 ymd[2] = val
@@ -292,10 +432,10 @@ export default function SignupForm() {
                     <Button type="submit">가입</Button>
                 </div>
                 {
-                    errorMsg._signUp && <FormMessage>{errorMsg._signUp}</FormMessage>
+                    apiErrorMsg._signUp && <FormMessage>{apiErrorMsg._signUp}</FormMessage>
                 }
                 <div className="signUp__form__buttonArea2 flex justify-start">
-                    <Link href={'/login'} className={'other-page-button'}>로그인</Link>
+                    <Link href={'/signIn/form'} className={'other-page-button'}>로그인</Link>
                 </div>
             </form>
         </Form>

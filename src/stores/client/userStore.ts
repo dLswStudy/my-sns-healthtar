@@ -1,22 +1,35 @@
-import create from 'zustand';
+import {create} from 'zustand';
 
-const userStore = create((set) => ({
+interface UserStoreState {
+    user: any;  // Specify more detailed type if possible
+    apiErrorMsg: {
+        _signIn: string;
+        _signUp: string;
+    };
+    setApiErrorMsg: (msg: string, type: 'signIn' | 'signUp') => void;
+    setUser: (user: any) => void;
+    emailVerified: boolean;
+}
+
+const useUserStore = create<UserStoreState>((set) => ({
     user: {},
-    errorMsg:{
-        _signIn:'',
-        _signUp:'',
+    apiErrorMsg: {
+        _signIn: '',
+        _signUp: '',
     },
-    setErrorMsg: (msg, type) => set((state) => {
+    emailVerified: false,
+    setEmailVerified: (value) => set((state) => ({ ...state, emailVerified: value })),
+    setUser: (user) => set((state) => ({ ...state, user })),
+    setApiErrorMsg: (msg, type) => set((state) => {
         switch (type) {
             case 'signIn':
-                return { errorMsg: { ...state.errorMsg, _signIn: msg } };
+                return { apiErrorMsg: { ...state.apiErrorMsg, _signIn: msg } };
             case 'signUp':
-                return { errorMsg: { ...state.errorMsg, _signUp: msg } };
+                return { apiErrorMsg: { ...state.apiErrorMsg, _signUp: msg } };
             default:
                 return state;
         }
-        console.log("state.errorMsg._signIn = ", state.errorMsg._signIn);
     }),
 }));
 
-export default userStore;
+export default useUserStore;
