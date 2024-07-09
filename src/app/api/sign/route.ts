@@ -1,9 +1,9 @@
 import {auth, firestore} from "@/firebase/firebase.client.config";
 import {signInWithEmailAndPassword, signOut, updatePassword} from 'firebase/auth'
-import {signupSchemaV2} from "@/app/signUp/_component/signupForm";
+import {signupSchemaV2} from "@/app/(public)/signUp/_component/signupForm";
 import moment from "moment";
 import {doc, getDoc, updateDoc} from "@firebase/firestore";
-import {loginSchema, loginSchemaV2} from "@/app/signIn/form/page";
+import {loginSchemaV2} from "@/app/(public)/signIn/form/page";
 
 export async function POST(req: Request) {
     const data = await req.json();

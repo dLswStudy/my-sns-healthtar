@@ -1,4 +1,4 @@
-import SignupForm from "@/app/signUp/_component/signupForm";
+import SignupForm from "@/app/(public)/signUp/_component/signupForm";
 export default function SignUp() {
     return (
         <div id={'signUp'} className="signUp flex w-auto h-max mt-16">
