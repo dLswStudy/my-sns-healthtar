@@ -7,19 +7,23 @@ import {
     Form,
     FormControl,
     FormField,
-    FormItem,
+    FormItem, FormLabel,
     FormMessage,
 } from "@/components/ui/form"
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import Link from "next/link";
-import {useRouter} from "next/navigation";
+import {useRouter, useSearchParams} from "next/navigation";
 import userStore from "@/stores/client/userStore";
 import {errorHandle} from "@/lib/utils";
+import {FormInput} from "lucide-react";
+import {Label} from "@/components/ui/label";
+import {Checkbox} from "@/components/ui/checkbox";
 
 const formSchema = z.object({
     email: z.string().email("올바른 형식의 이메일을 입력해주세요."),
     password: z.string(),
+    rememberMe: z.boolean()
 })
 export type loginSchema = z.infer<typeof formSchema>
 export type loginSchemaV2 = loginSchema & {
@@ -28,6 +32,7 @@ export type loginSchemaV2 = loginSchema & {
 export default function SignInForm() {
     const {apiErrorMsg, setApiErrorMsg} = userStore()
     const router = useRouter();
+    const searchParams = useSearchParams();
     const handleClick = (event: any) => {
         setApiErrorMsg('', 'signIn')
     }
@@ -39,8 +44,9 @@ export default function SignInForm() {
             password: "",
         }
     })
+
     async function onSubmit(data: loginSchema) {
-        const userData: loginSchemaV2 = {...data, action:'in'}
+        const userData: loginSchemaV2 = {...data, action: 'in'}
         await fetch('/api/sign?_=in', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -103,6 +109,23 @@ export default function SignInForm() {
                     )}
                 >
                 </FormField>
+                <FormField name={'rememberMe'} render={
+                    ({field}) => (
+                        <FormItem>
+                            <FormControl>
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox id="rememberMe" {...field}/>
+                                    <label
+                                        htmlFor="rememberMe"
+                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                    >
+                                        로그인 기억하기
+                                    </label>
+                                </div>
+                            </FormControl>
+                        </FormItem>
+                    )
+                }/>
                 <div className="sign__form__buttonArea1 flex justify-center">
                     <Button type="submit">로그인</Button>
                 </div>
