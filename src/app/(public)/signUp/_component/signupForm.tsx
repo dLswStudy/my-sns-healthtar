@@ -146,7 +146,7 @@ export default function SignupForm() {
                                             htmlFor="rememberMe"
                                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                         >
-                                            로그인 기억하기
+                                            브라우저에 로그인 기억하기
                                         </label>
                                     </div>
                                 </FormControl>

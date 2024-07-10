@@ -94,6 +94,7 @@ export function useUser() {
     const [ loading, setLoading ] = useState( true );
 
     useEffect(() => {
+        console.log("authUser = ", authUser);
         return onAuthStateChanged(auth, (user) => {
             console.log("onAuthStateChanged Boolean user = ", Boolean(user));
             setAuthUser(user)
