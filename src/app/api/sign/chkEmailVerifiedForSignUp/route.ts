@@ -1,7 +1,7 @@
 import {auth, firestore, signInWithEmailAndPassword} from "@/firebase/firebase.client.config";
 import {doc, getDoc} from "firebase/firestore";
 
-export async function chkEmailVerified() {
+export async function GET() {
     try {
         const currtUser = auth.currentUser;
         let password = ''
