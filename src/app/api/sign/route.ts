@@ -2,7 +2,7 @@ import {auth, firestore} from "@/firebase/firebase.client.config";
 import {signInWithEmailAndPassword, signOut, updatePassword} from 'firebase/auth'
 import {signupSchemaV2} from "@/app/(public)/signUp/_component/signupForm";
 import moment from "moment";
-import {doc, getDoc, updateDoc} from "@firebase/firestore";
+import {doc, getDoc, updateDoc} from "firebase/firestore";
 import {loginSchemaV2} from "@/app/(public)/signIn/form/page";
 
 export async function POST(req: Request) {
@@ -42,6 +42,7 @@ async function signUp(data: signupSchemaV2) {
             updatedAt: moment().format('YYYYDDMMHHmmSS'),
         };
         const userDocRef = doc(firestore,"USERS",data.email);
+        console.log("auth.currentUser = ", auth.currentUser);
         await updatePassword(auth.currentUser, data.password)
         await updateDoc(userDocRef,{...newData,tempPw:''});
         await signOut(auth)

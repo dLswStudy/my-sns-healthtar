@@ -1,2 +1,2 @@
 @import "./globals.css";
-@import "../../../app/signIn/form/sign.module.scss";
+@import "../../../app/(public)/signIn/form/sign.module.scss";

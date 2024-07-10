@@ -23,6 +23,7 @@ export async function POST(req: Request) {
         await signInWithEmailAndPassword(auth, email, pw);
         const currtUser = auth.currentUser;
         await sendEmailVerification(currtUser)
+        console.log("after sendEmailVerifi => auth.currentUser = ", Boolean(auth.currentUser));
         // await deleteUser(currtUser)
         return Response.json({message: 'send verifyEmail successfully'});
     } catch (error) {

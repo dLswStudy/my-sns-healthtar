@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "../assets/style/app.build.css";
+import {Auth} from "@/app/_component/Auth";
 
 export const metadata: Metadata = {
   title: "Healthtar★",
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html>
       <body>
-      {children}
+        <Auth>
+            {children}
+        </Auth>
       </body>
     </html>
   );

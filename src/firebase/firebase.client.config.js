@@ -33,11 +33,11 @@ export const auth = getAuth(app);
 export const firestore = getFirestore(app);
 export const storage = getStorage(app);
 
-// const actionCodeSettings = {
-//     url: process.env.NEXT_PUBLIC_APP_DOMAIN,
-//     handleCodeInApp: true,
-//     dynamicLinkDomain: process.env.NEXT_PUBLIC_APP_DOMAIN
-// };
+const actionCodeSettings = {
+    url: process.env.NEXT_PUBLIC_APP_DOMAIN+'/signUp/sentEmail?isEmailSignIn=true',
+    handleCodeInApp: true,
+    // dynamicLinkDomain: 'example.page.link'
+};
 
 export {
     signOut,
@@ -46,5 +46,6 @@ export {
     signInWithEmailAndPassword,
     sendEmailVerification,
     deleteUser,
-    onAuthStateChanged
+    onAuthStateChanged,
+    actionCodeSettings
 }

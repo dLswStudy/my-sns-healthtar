@@ -16,6 +16,8 @@ import {getDownloadURL, getStorage, ref, uploadBytes} from "@firebase/storage";
 import {bucketName} from "@/app.config";
 import {useEffect, useState} from "react";
 import {storage} from "@/firebase/firebase.client.config";
+import {authSendSignInLinkToEmail, authVerifyEmail, signUp} from "@/lib/auth";
+import {chkEmailVerified} from "@/app/api/sign/chkEmailVerifiedForSignUp/route";
 
 const MAX_FILE_SIZE = 2000000; // 2MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/jpg"];
@@ -34,12 +36,11 @@ const formSchema = z.object({
     }),
     gender: z.string().refine(g => g.length > 0, '성별을 선택하세요.'),
     birth: z.string().date(),
-    isEmailVerified: z.boolean().refine(bool => bool, "이메일 인증을 완료해주세요.")
+    rememberMe: z.boolean()
 })
 type signupSchema = z.infer<typeof formSchema>
 export type signupSchemaV2 = signupSchema & {
     profileImageUrl: string,
-    action: string
 }
 const years = Array.from({length: 100}, (_, i) => '' + (new Date().getFullYear() - i));
 const months = Array.from({length: 12}, (_, i) => i + 1 < 10 ? '0' + (i + 1) : '' + (i + 1));
@@ -49,23 +50,24 @@ export default function SignupForm() {
     const {
         apiErrorMsg,
         setApiErrorMsg,
+        setEmailBeforeAuth,
+        setSignUpUser
     } = userStore()
-    const [timeLeft, setTimeLeft] = useState(180); // 초기 시간 180초 (3분)
-    const [buttonText, setButtonText] = useState("인증하기");
+    // const [timeLeft, setTimeLeft] = useState(180); // 초기 시간 180초 (3분)
+    // const [buttonText, setButtonText] = useState("인증하기");
     const [buttonDisabled, setButtonDisabled] = useState(false);
     const router = useRouter();
 
     // 임시로 생성된 계정 있으면 삭제
-    const deleteTemporalAccount = async () => fetch('/api/sign/deleteTemporalAccount');
+    // const deleteTemporalAccount = async () => fetch('/api/sign/deleteTemporalAccount');
     useEffect(() => {
         console.log('siginup mounted')
-        deleteTemporalAccount()
+        // deleteTemporalAccount()
+        setApiErrorMsg('','signUp')
     }, []);
 
     const handleClick = (e: any) => {
         form.clearErrors(e.target.name)
-        if (e.target.name == 'email')
-            form.clearErrors('isEmailVerified')
     }
     const form = useForm<signupSchema>({
         resolver: zodResolver(formSchema),
@@ -78,7 +80,7 @@ export default function SignupForm() {
             password: "",
             gender: '',
             birth: `yyyy-mm-dd`,
-            isEmailVerified: false
+            rememberMe: false
         }
     })
 
@@ -88,105 +90,99 @@ export default function SignupForm() {
         return await getDownloadURL(storageRef);
     }
 
-    const formatTime = (time: number) => {
-        console.log("time = ", time);
-        const minutes = Math.floor(time / 60);
-        const seconds = time % 60;
-        const timeText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        console.log("timeText = ", timeText);
-        setButtonText(timeText)
-    };
+    // const formatTime = (time: number) => {
+    //     console.log("time = ", time);
+    //     const minutes = Math.floor(time / 60);
+    //     const seconds = time % 60;
+    //     const timeText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    //     console.log("timeText = ", timeText);
+    //     setButtonText(timeText)
+    // };
 
 
-    async function verifyEmail(email: string) {
-        const isErrorClear = await form.trigger('email')
-        if (!isErrorClear) {
-            return
-        }
-        // 임의 비번으로 등록->로그인->인증메일전송
-        await fetch('/api/sign/verifyEmail', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({email})
-        }).then(async res => {
-            const errorhandle = await errorHandle(res)
-            if (errorhandle.isError) {
-                console.log("errorhandle.code = ", errorhandle.code);
-                if (errorhandle.code != 409)
-                    await deleteTemporalAccount()
-                form.setError('email', {type: 'manual', message: errorhandle.message})
-                return
-            }
-
-            // 버튼 클릭 시 타이머 시작
-            if (buttonText === "인증하기") {
-                setButtonDisabled(true);
-                setTimeLeft(181);
-            }
-            let intervalAPI;
-            const intervalTime = setInterval(() => {
-                setTimeLeft(currTime => {
-                    if (currTime <= 1) {  // 이 부분을 수정하여 0이 되었을 때 종료되도록 처리
-                        clearInterval(intervalAPI);
-                        clearInterval(intervalTime);
-                        setButtonText("인증하기");
-                        setButtonDisabled(false);
-                        console.log('3분 경과, 검증 종료');
-                        deleteTemporalAccount()
-                        return 0;  // 타이머 종료 시 0으로 리셋
-                    }
-                    const newTime = currTime - 1;
-                    formatTime(newTime);  // 먼저 시간을 감소시킨 후 포맷 함수 호출
-                    return newTime;
-                });
-            }, 1000);
-
-            intervalAPI = setInterval(async () => {
-                // 사용자가 임의의 시간에 인증메일 링크 클릭
-                // -> 서버가 알 수 없음.
-                // -> 주기적 확인: 1초마다 [임시계정 로그인->CurrentUser.emailVerified 확인]
-                const response = await fetch('/api/sign/chkEmailVerifiedForSignUp');
-                const emailVrfd = (await response.json()).emailVerified
-                console.log("auth.currentUser?.emailVerified = ", emailVrfd);
-                if (emailVrfd) {
-                    clearInterval(intervalAPI);
-                    clearInterval(intervalTime);
-                    alert('이메일이 인증되었습니다.');
-                    setButtonText("인증완료");
-                    setButtonDisabled(true);
-                    form.setValue('isEmailVerified', true)
-                    form.setError('email', {type: 'manual', message: ''})
-                } else {
-                    console.log('이메일 인증 대기 중...');
-                }
-            }, 1000);  // 1초마다 실행
-
-        }).catch(error => {
-            deleteTemporalAccount()
-            form.setError('email', {type: 'manual', message: error.message})
-        })
-
-    }
+    // async function verifyEmail(email: string) {
+    //     const isErrorClear = await form.trigger('email')
+    //     if (!isErrorClear) {
+    //         return
+    //     }
+    //     // 임의 비번으로 등록->로그인->인증메일전송
+    //     await authVerifyEmail(email).then(async res => {
+    //         const errorhandle = await errorHandle(res)
+    //         if (errorhandle.isError) {
+    //             console.log("errorhandle.code = ", errorhandle.code);
+    //             if (errorhandle.code != 409)
+    //                 await deleteTemporalAccount()
+    //             form.setError('email', {type: 'manual', message: errorhandle.message})
+    //             return
+    //         }
+    //
+    //         // 버튼 클릭 시 타이머 시작
+    //         if (buttonText === "인증하기") {
+    //             setButtonDisabled(true);
+    //             setTimeLeft(181);
+    //         }
+    //         let intervalAPI;
+    //         const intervalTime = setInterval(() => {
+    //             setTimeLeft(currTime => {
+    //                 if (currTime <= 1) {  // 이 부분을 수정하여 0이 되었을 때 종료되도록 처리
+    //                     clearInterval(intervalAPI);
+    //                     clearInterval(intervalTime);
+    //                     setButtonText("인증하기");
+    //                     setButtonDisabled(false);
+    //                     console.log('3분 경과, 검증 종료');
+    //                     deleteTemporalAccount()
+    //                     return 0;  // 타이머 종료 시 0으로 리셋
+    //                 }
+    //                 const newTime = currTime - 1;
+    //                 formatTime(newTime);  // 먼저 시간을 감소시킨 후 포맷 함수 호출
+    //                 return newTime;
+    //             });
+    //         }, 1000);
+    //
+    //         intervalAPI = setInterval(async () => {
+    //             // 사용자가 임의의 시간에 인증메일 링크 클릭
+    //             // -> 서버가 알 수 없음.
+    //             // -> 주기적 확인: 1초마다 [임시계정 로그인->CurrentUser.emailVerified 확인]
+    //             const response = await chkEmailVerified()
+    //             const emailVrfd = (await response.json()).emailVerified
+    //             console.log("auth.currentUser?.emailVerified = ", emailVrfd);
+    //             if (emailVrfd) {
+    //                 clearInterval(intervalAPI);
+    //                 clearInterval(intervalTime);
+    //                 alert('이메일이 인증되었습니다.');
+    //                 setButtonText("인증완료");
+    //                 setButtonDisabled(true);
+    //                 form.setValue('isEmailVerified', true)
+    //                 form.setError('email', {type: 'manual', message: ''})
+    //             } else {
+    //                 console.log('이메일 인증 대기 중...');
+    //             }
+    //         }, 1000);  // 1초마다 실행
+    //
+    //     }).catch(error => {
+    //         deleteTemporalAccount()
+    //         form.setError('email', {type: 'manual', message: error.message})
+    //     })
+    //
+    // }
 
     async function onSubmit(data: signupSchema) {
         console.log("data = ", data);
         const profileImageUrl = await uploadImage(data.profileImage as File, data.nickName);
-        const action = 'up'
-        const userData: signupSchemaV2 = {...data, profileImageUrl, action}
+        const userData: signupSchemaV2 = {...data, profileImageUrl}
         let erMsg = ''
-        await fetch('/api/sign', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(userData)
-        }).then(async res => {
+        setSignUpUser(userData)
+        await authSendSignInLinkToEmail(data.email)
+            .then(async res => {
             const errhandle = await errorHandle(res)
             if (errhandle.isError) {
                 erMsg = errhandle.message
                 return
             }
 
-            console.log('sign up success')
-            router.push('/signIn/form');
+            setEmailBeforeAuth(data.email)
+            console.log('send email success')
+            router.push('/signUp/sentEmail');
         }).catch(err => {
             erMsg = '에러가 발생하였습니다. 잠시 후 다시 시도해주세요.'
         })
@@ -204,7 +200,7 @@ export default function SignupForm() {
                     name="email"
                     render={({field}) => (
                         <FormItem>
-                            <div className={"flex"}>
+                            {/*<div className={"flex"}>*/}
                                 <FormControl>
                                     <Input
                                         placeholder="이메일"
@@ -213,31 +209,40 @@ export default function SignupForm() {
                                         {...field}
                                     />
                                 </FormControl>
-                                <Button type='button' className="ml-1"
-                                        onClick={() => verifyEmail(field.value)}
-                                        disabled={!Boolean(field.value) || Boolean(form.formState.errors.email) || buttonDisabled}
-                                >{buttonText}</Button>
-                            </div>
-                            <FormMessage>{form.formState.errors.isEmailVerified && form.formState.errors.isEmailVerified.message}</FormMessage>
+                                {/*<Button type='button' className="ml-1"*/}
+                                {/*        onClick={() => verifyEmail(field.value)}*/}
+                                {/*        disabled={!Boolean(field.value) || Boolean(form.formState.errors.email) || buttonDisabled}*/}
+                                {/*>{buttonText}</Button>*/}
+                            {/*</div>*/}
+                            <FormMessage></FormMessage>
                         </FormItem>
                     )}
                 />
                 <FormField
                     control={form.control}
-                    name="isEmailVerified"
-                    render={({field}) => (
-                        <FormItem>
-                            <FormControl>
-                                <Input
-                                    type="checkbox"
-                                    checked={field.value}
-                                    className="hidden"
-                                    onChange={e => field.onChange(e.target.checked)}
-                                />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
+                    name={'rememberMe'}
+                    render={
+                        ({field}) => (
+                            <FormItem>
+                                <FormControl>
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            id="rememberMe"
+                                            name="rememberMe"
+                                            type={'checkbox'}
+                                            checked={field.value}
+                                            onChange={(val) =>field.onChange(val)}/>
+                                        <label
+                                            htmlFor="rememberMe"
+                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                        >
+                                            로그인 기억하기
+                                        </label>
+                                    </div>
+                                </FormControl>
+                            </FormItem>
+                        )
+                    }/>
                 <FormField
                     control={form.control}
                     name="profileImage"

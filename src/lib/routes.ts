@@ -4,5 +4,5 @@ export const PUBLIC = {
     EMAIL_SIGNUP:'/signUp'
 }
 export const PROTECTED = {
-    HOME:'/'
+    MAIN:'/main'
 }

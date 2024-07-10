@@ -1,10 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
-        domains: ['https://localhost:3000'], // 허용할 이미지 도메인 추가
+        domains: ['http://localhost:3000'], // 허용할 이미지 도메인 추가
     },
     async rewrites() {
+        console.log("Rewrites called");
         return [
+            {
+                source: '/',
+                destination: '/main',
+            },
             {
                 source: '/api/:path*',
                 destination: '/api/:path*',
@@ -13,4 +18,4 @@ const nextConfig = {
     },
 };
 
-export default nextConfig;
+module.exports= nextConfig;
