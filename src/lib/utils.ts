@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import exp from "node:constants";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -11,8 +12,23 @@ export const applyPrefix = (prefix, classes) => {
 
 /* 영어 대문자, 소문자, 숫자, 특수문자 중
 2종류 문자 조합으로 최소 10자리 이상 또는
-3종류 문자 조합으로 최소 8자리 이상 */
+3종류 문자 조합으로 최소 8자리 이상
+연속된 숫자나 연속적으로 배치된 키보드 문자가 3개 이상 포함 불가.
+*/
 export function validatePassword(testString) {
+  console.log("testString = ", testString);
+  const nick = localStorage.getItem('hst-nickname');
+  const sequences = [nick, '`1234567890-=','=-0987654321`','~!@#$%^&*()_+','+_)(*&^%$#@!~','qwertyuiop[]','][poiuytrewq','asdfghjkl;',';lkjhgfdsa','zxcvbnm,./','/.,mnbvcxz']
+  console.log("sequences = ", sequences);
+
+  // 연속된 숫자나 연속적으로 배치된 키보드 문자가 3개 이상 포함될 경우
+  for (let seq of sequences) {
+    console.log("seq = ", seq);
+    if (containsNLengthSubstring(seq, testString, 3)) {
+      return false;
+    }
+  }
+
   let kindCnt = 0;
 
   // 정규 표현식을 사용하여 각 종류의 문자가 포함되었는지 확인
@@ -21,6 +37,8 @@ export function validatePassword(testString) {
   if (/\d/.test(testString)) kindCnt += 1;
   if (/[\W_]/.test(testString)) kindCnt += 1;
 
+  console.log("kindCnt = ", kindCnt);
+
   // 조건에 따라 true 또는 false 반환
   if (kindCnt >= 3 && testString.length >= 8) {
     return true;
@@ -28,7 +46,14 @@ export function validatePassword(testString) {
   if (kindCnt >= 2 && testString.length >= 10) {
     return true;
   }
+
+
   return false;
+}
+
+export function exportNickname(nickname) {
+  localStorage.setItem('hst-nickname', nickname);
+  return true;
 }
 
 export function generateTemporaryPassword(length) {
@@ -71,5 +96,20 @@ export async function errorHandle(res){
   }
 
   return error
+}
+
+function containsNLengthSubstring(A, B, n) {
+  if (n < 2) return false; // n은 최소 2 이상이어야 합니다.
+
+  // A 문자열에서 가능한 모든 연속된 n 글자 조합을 확인
+  for (let i = 0; i <= A.length - n; i++) {
+    const substring = A.slice(i, i + n);
+    console.log("substring = ", substring);
+    if (B.includes(substring)) {
+      console.log('  true')
+      return true;  // B에서 해당 부분 문자열을 찾으면 true 반환
+    }
+  }
+  return false;  // 모든 검사 후 찾지 못했으면 false 반환
 }
 
