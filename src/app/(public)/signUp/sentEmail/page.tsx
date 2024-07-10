@@ -11,7 +11,6 @@ export default function SentEmail() {
     const [errMsg, setErrMsg] = useState('');
     useEffect(() => {
         if (isSignInWithEmailLink(auth, window.location.href)) {
-            console.log('[isSignInWithEmailLink True]')
             signUp(signUpUser, setFirestoreUser)
                 .then(async res => {
                     const errhandle = await errorHandle(res)

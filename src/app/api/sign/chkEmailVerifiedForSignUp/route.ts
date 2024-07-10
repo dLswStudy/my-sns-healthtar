@@ -4,7 +4,6 @@ import {doc, getDoc} from "firebase/firestore";
 export async function chkEmailVerified() {
     try {
         const currtUser = auth.currentUser;
-        console.log("chkEmailVerified - currtUser = ", Boolean(currtUser));
         let password = ''
         if(currtUser){
             const docRef = doc(firestore, 'USERS', currtUser.email);

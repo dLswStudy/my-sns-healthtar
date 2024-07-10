@@ -16,28 +16,23 @@ export const applyPrefix = (prefix, classes) => {
 연속된 숫자나 연속적으로 배치된 키보드 문자가 3개 이상 포함 불가.
 */
 export function validatePassword(testString) {
-  console.log("testString = ", testString);
   const nick = localStorage.getItem('hst-nickname');
   const sequences = [nick, '`1234567890-=','=-0987654321`','~!@#$%^&*()_+','+_)(*&^%$#@!~','qwertyuiop[]','][poiuytrewq','asdfghjkl;',';lkjhgfdsa','zxcvbnm,./','/.,mnbvcxz']
-  console.log("sequences = ", sequences);
 
   // 연속된 숫자나 연속적으로 배치된 키보드 문자가 3개 이상 포함될 경우
   for (let seq of sequences) {
-    console.log("seq = ", seq);
     if (containsNLengthSubstring(seq, testString, 3)) {
       return false;
     }
   }
 
   let kindCnt = 0;
-
   // 정규 표현식을 사용하여 각 종류의 문자가 포함되었는지 확인
   if (/[A-Z]/.test(testString)) kindCnt += 1;
   if (/[a-z]/.test(testString)) kindCnt += 1;
   if (/\d/.test(testString)) kindCnt += 1;
   if (/[\W_]/.test(testString)) kindCnt += 1;
 
-  console.log("kindCnt = ", kindCnt);
 
   // 조건에 따라 true 또는 false 반환
   if (kindCnt >= 3 && testString.length >= 8) {
@@ -46,7 +41,6 @@ export function validatePassword(testString) {
   if (kindCnt >= 2 && testString.length >= 10) {
     return true;
   }
-
 
   return false;
 }
@@ -104,9 +98,7 @@ function containsNLengthSubstring(A, B, n) {
   // A 문자열에서 가능한 모든 연속된 n 글자 조합을 확인
   for (let i = 0; i <= A.length - n; i++) {
     const substring = A.slice(i, i + n);
-    console.log("substring = ", substring);
     if (B.includes(substring)) {
-      console.log('  true')
       return true;  // B에서 해당 부분 문자열을 찾으면 true 반환
     }
   }

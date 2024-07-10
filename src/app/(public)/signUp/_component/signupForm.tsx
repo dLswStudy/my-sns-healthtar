@@ -56,7 +56,6 @@ export default function SignupForm() {
     const router = useRouter();
 
     useEffect(() => {
-        console.log('siginup mounted')
         setApiErrorMsg('','signUp')
     }, []);
 
@@ -85,7 +84,6 @@ export default function SignupForm() {
     }
 
     async function onSubmit(data: signupSchema) {
-        console.log("data = ", data);
         const profileImageUrl = await uploadImage(data.profileImage as File, data.nickName);
         const userData: signupSchemaV2 = {...data, profileImageUrl}
         let erMsg = ''

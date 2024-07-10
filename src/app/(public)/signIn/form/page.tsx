@@ -48,12 +48,10 @@ export default function SignInForm() {
     })
 
     async function onSubmit(data: loginSchema) {
-        console.log("data = ", data);
         await signIn(data.email, data.password, data.rememberMe, setFirestoreUser)
             .then(async res => {
                 const errorhandle = await errorHandle(res)
                 if (errorhandle.isError) {
-                    console.log("errorhandle = ", errorhandle);
                     setApiErrorMsg(errorhandle.message, 'signIn')
                     return
                 }
