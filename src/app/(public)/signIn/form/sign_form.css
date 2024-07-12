@@ -1,0 +1,22 @@
+.sign__form__title {
+  font-size: x-large;
+  font-weight: bolder;
+  display: flex;
+  justify-content: center;
+}
+.sign__form__title .brandNm {
+  position: relative;
+}
+.sign__form__title .brandNm span {
+  @apply text-rose-700;
+  position: absolute;
+  top: 3px;
+  line-height: 1;
+}
+
+.other-page-button {
+  @apply text-blue-600;
+  text-decoration: underline;
+}
+
+/*# sourceMappingURL=sign_form.css.map */
