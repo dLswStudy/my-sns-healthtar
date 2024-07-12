@@ -1,6 +1,5 @@
 import {ReactNode} from "react";
 import AuthRaise from "@/app/(public)/_component/AuthRaise";
-import SignupForm from "@/app/(public)/signUp/_component/signupForm";
 
 export default function Layout({children}: { children: ReactNode }) {
     return (

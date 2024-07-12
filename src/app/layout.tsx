@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "../assets/style/app.scss";
+import "../assets/style/tailwind/index.css";
 import {Auth} from "@/app/_component/Auth";
 
 export const metadata: Metadata = {
