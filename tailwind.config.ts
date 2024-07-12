@@ -11,6 +11,7 @@ const config = {
     extend:{
       screens:{
         // 기본 브레이크포인트
+        'xs': '480px',
         'sm': '640px',
         'md': '768px',
         'lg': '1024px',
@@ -18,6 +19,7 @@ const config = {
         '2xl': '1536px',
 
         // max- 브레이크포인트
+        'max-xs': { 'max': '479px' },
         'max-sm': { 'max': '639px' },
         'max-md': { 'max': '767px' },
         'max-lg': { 'max': '1023px' },

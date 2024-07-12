@@ -1,0 +1,14 @@
+#user{
+    .container{
+        @apply p-2;
+        @media #{$xs} {
+            @apply p-3;
+        }
+        @media #{$sm} {
+            @apply p-4;
+        }
+        @media #{$md} {
+            @apply p-6;
+        }
+    }
+}
