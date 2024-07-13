@@ -1,5 +1,5 @@
 "use client"
-import {useEffect, useState} from "react";
+import {ChangeEvent, useEffect, useState} from "react";
 import userStore from "@/stores/client/userStore";
 import {Card} from "@/components/ui/card";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
@@ -15,6 +15,19 @@ export default function Profile({params}: Props) {
     const [pageData, setPageData] = useState(null);
     const {firestoreUser} = userStore()
     const isMine = decodedNickname === firestoreUser?.nickname
+    const [imageSrc, setImageSrc] = useState<string | null>(null);
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            alert("file.lastModified = "+file.lastModified);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImageSrc(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+            alert("imageSrc = "+imageSrc )
+        }
+    };
     useEffect(() => {
         async function fetchData() {
             if (isMine) {
@@ -26,6 +39,8 @@ export default function Profile({params}: Props) {
         }
 
         fetchData();
+
+
     }, [decodedNickname, isMine, firestoreUser]);
 
 
@@ -65,7 +80,8 @@ export default function Profile({params}: Props) {
                                         <span>{pageData?.followings.length}</span></div>
                                 </div>
                             </div>
-
+                            <input type="file" accept="image/*" capture="environment" multiple onChange={handleFileChange}/>
+                            {imageSrc && <img id="preview" src={imageSrc} alt="Preview" />}
                         </div>
                     </div>
                 </Card>
