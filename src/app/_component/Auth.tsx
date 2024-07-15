@@ -10,7 +10,7 @@ import {useUser} from "@/lib/auth";
 import {Spinner} from "@/components/ui/spinner";
 
 export function Auth({ children }: { children: ReactNode }) {
-    const {loading} = useUser()
+    const {loading} = useUser('APP')
 
     return (
         <>

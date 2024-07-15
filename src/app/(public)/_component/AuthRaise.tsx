@@ -12,7 +12,7 @@ import {Spinner} from "@/components/ui/spinner";
 export default function AuthRaise({ children }: { children: ReactNode }) {
     const router = useRouter();
 
-    const {authUser, loading} = useUser()
+    const {authUser, loading} = useUser('public')
 
     useEffect(() => {
         if (authUser) {

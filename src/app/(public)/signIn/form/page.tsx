@@ -39,7 +39,6 @@ export default function SignInForm() {
     const searchParams = useSearchParams();
     const continueTo = searchParams.get("continueTo") ?? PROTECTED.MAIN;
     const {userProfilePage} = useUserProfileStore()
-    console.log("SignIn userProfilePage = ", userProfilePage);
 
     useEffect(()=>{
         setSignUpUser(null)

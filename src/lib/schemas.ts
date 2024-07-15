@@ -19,6 +19,7 @@ export type UserSchema = {
 
 export type userProfilePageSchema = {
     seq: number;
+    email: string;
     name: string;
     nickname: string;
     profile_image_url: string;
@@ -41,7 +42,7 @@ export type userProfilePageSchema = {
         value_arr:Array<valueAndId>;
     }
     item_unit_arr:Array<itemAndUnit>;
-    id:{
+    ids:{
         itemAndUnit:number;
     }
 };

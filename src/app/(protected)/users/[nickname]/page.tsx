@@ -17,9 +17,9 @@ import {Textarea} from "@/components/ui/textarea";
 import userProfileStore from "@/stores/client/userProfileStore";
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {userProfilePageSchema} from "@/lib/schemas";
-import SpinByW from "@/components/ui/spinnerW";
-import {RotatingLines as Spin} from "react-loader-spinner";
 import {Spinner} from "@/components/ui/spinner";
+import {setProfile} from "@/app/api/profile/profileService";
+import SpinByW from "@/components/ui/spinnerW";
 
 
 type Props = {
@@ -28,8 +28,8 @@ type Props = {
 export default function Profile({params}: Props) {
     const {nickname} = params;
     const decodedNickname: string = decodeURIComponent(nickname);
-    const {firestoreUser} = userStore()
-    const {setField, userProfilePage} = userProfileStore();
+    const {firestoreUser,setFirestoreUser} = userStore()
+    const {setField, userProfilePage,immerSetField} = userProfileStore();
     const [isEditing, setIsEditing] = useState(false);
 
     const newNicknameRef = useRef<HTMLInputElement>(null);
@@ -41,15 +41,26 @@ export default function Profile({params}: Props) {
     const queryClient = useQueryClient();
 
     const {data: userProfilePageRQ, status, error, isFetching} = useQuery({
-        queryKey: ['userProfile'],
+        queryKey: ['userProfile', decodedNickname],
         queryFn: async (): Promise<userProfilePageSchema> => getUserByNickname(decodedNickname)
     });
 
-    // const mutation = useMutation(updateUserProfile, {
-    //     onSuccess: () => {
-    //         queryClient.invalidateQueries(['userProfile', decodedNickname]);
-    //     },
-    // });
+    const {mutate:profilePutMutate, status:putStatus, error:putError} = useMutation({
+        mutationFn: (userProfilePage: userProfilePageSchema) => setProfile(userProfilePage, setFirestoreUser),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+            alert('프로필 업데이트 완료')
+            setIsEditing(false)
+            // 닉네임이 변경된 경우 경로 업데이트
+            if (userProfilePage.nickname !== decodedNickname) {
+                router.replace(`/users/${(userProfilePage.nickname)}`);
+            }
+        },
+        onError: (error) => {
+            // 에러 처리
+            alert(`프로필 업데이트 실패: ${error}`);
+        },
+    })
 
     useEffect(() => {
         if (userProfilePageRQ) {
@@ -64,8 +75,6 @@ export default function Profile({params}: Props) {
     }, [userProfilePageRQ]);
 
     if (!userProfilePage) {
-        // return <div>...Loading User Profile</div>;
-        // return <Spinner loading={status=='pending'} errMsg={error?.['failureReason']}/>;
         return <Spinner loading={status==='pending'} />;
     }
 
@@ -78,9 +87,12 @@ export default function Profile({params}: Props) {
         router.replace(PROTECTED.MAIN)
     }
     const onEditSave = () => {
-
-        setIsEditing(false)
+        profilePutMutate(userProfilePage)
     }
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: string) => {
+        immerSetField((state)=>{state['userProfilePage'][`${field}`] = e.target.value});
+    };
 
     return (
         <div id={'user'}>
@@ -91,15 +103,15 @@ export default function Profile({params}: Props) {
                 <Card id={'profile-main'} className={'w-[300px] xs:w-[470px]'}>
                     <div className="container">
                         <div className="flex justify-end pb-2 space-x-2">
-                            {isMine && !isEditing && <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'}
-                                                             onClick={onEditExecute}>프로필 편집</Button>}
-                            {isMine && isEditing && <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'}
-                                                            onClick={onEditCancel} variant={'secondary'}>편집 취소</Button>}
-                            {isMine && isEditing && <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'}
-                                                            onClick={onEditSave}>편집 완료</Button>}
+                            {isMine && !isEditing && <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'} onClick={onEditExecute}>프로필 편집</Button>}
+                            {isMine && isEditing && <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'} onClick={onEditCancel} variant={'secondary'}>편집 취소</Button>}
+                            {isMine && isEditing &&
+                                <SpinByW loading={putStatus==='pending'}>
+                                    <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'} onClick={onEditSave}>프로필 저장</Button>
+                                </SpinByW>
+                            }
                         </div>
-                        <div className="max-xs:space-y-3
-                                            xs:flex xs:space-x-3">
+                        <div className="max-xs:space-y-3 xs:flex xs:space-x-3">
                             <div className="profile-image max-xs:flex max-xs:justify-center">
                                 <Avatar className={'w-32 h-32 xs:w-40 xs:h-40'}>
                                     <AvatarImage src={userProfilePage?.profile_image_url}/>
@@ -108,29 +120,26 @@ export default function Profile({params}: Props) {
                             </div>
                             <div className="profile-info">
                                 {isEditing ? (
-                                        <div className={'space-y-2'}>
-                                            <div>
-                                                닉네임:
-                                                <Input ref={newNicknameRef} defaultValue={userProfilePage?.nickname}/>
-                                            </div>
-                                            <div>
-                                                이름:
-                                                <Input ref={newNameRef} defaultValue={userProfilePage?.name}/>
-                                            </div>
-                                            <div>
-                                                인사말:
-                                                <Textarea ref={newHelloWordRef} defaultValue={userProfilePage?.helloword}/>
-                                            </div>
-                                        </div>)
-                                    : (
-                                        <div className="">
-                                            <div
-                                                className="name font-bold text-xl xs:text-2xl">{userProfilePage?.name}</div>
-                                            <p className={'mt-2 max-xs:text-sm'}>{userProfilePage?.helloword}</p>
+                                    <div className={'space-y-2'}>
+                                        <div>
+                                            닉네임:
+                                            <Input defaultValue={userProfilePage?.nickname} onChange={(e) => handleInputChange(e, 'nickname')} />
                                         </div>
-                                    )
-
-                                }
+                                        <div>
+                                            이름:
+                                            <Input defaultValue={userProfilePage?.name} onChange={(e) => handleInputChange(e, 'name')} />
+                                        </div>
+                                        <div>
+                                            인사말:
+                                            <Textarea defaultValue={userProfilePage?.helloword} onChange={(e) => handleInputChange(e, 'helloword')} />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="">
+                                        <div className="name font-bold text-xl xs:text-2xl">{userProfilePage?.name}</div>
+                                        <p className={'mt-2 max-xs:text-sm'}>{userProfilePage?.helloword}</p>
+                                    </div>
+                                )}
                                 <div className="flex justify-start mt-14 space-x-11 xs:space-x-8">
                                     <div className="max-xs:text-sm"><span className={'font-bold'}>게시물:</span>
                                         <span>{userProfilePage?.posts}</span></div>

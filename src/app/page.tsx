@@ -4,7 +4,7 @@ import {PROTECTED, PUBLIC} from "@/lib/routes";
 import {useRouter} from "next/navigation";
 
 export default function Home() {
-    const {authUser} = useUser()
+    const {authUser} = useUser('Home')
     const router = useRouter();
     console.log("authUser = ", authUser);
 

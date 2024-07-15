@@ -67,7 +67,6 @@ export async function signIn(email: string, password: string, rememberMe: boolea
         }else
             throw new Error("user not found")
         await signInWithEmailAndPassword(auth, email, password);
-        console.log("auth.currentUser.emailVerified = ", auth.currentUser.emailVerified);
         const message = `sign-in: ${email} successfully`;
         console.log(message)
         return Response.json(message)
@@ -91,16 +90,20 @@ export async function signOut() {
     }
 }
 
-export function useUser() {
+export function useUser(location) {
     const {authUser, setAuthUser} = userStore()
     const [ loading, setLoading ] = useState( true );
 
     useEffect(() => {
-        console.log("authUser = ", authUser);
+        console.log(`[${location}] authUser = `, authUser);
         return onAuthStateChanged(auth, (user) => {
-            console.log("onAuthStateChanged Boolean user = ", Boolean(user));
-            if(Boolean(authUser) != Boolean(user))
+            console.log(`[${location}] onAuthStateChanged user = `, user);
+            if(Boolean(authUser) != Boolean(user)){
+                console.log(`[${location}] before after not Equal`)
                 setAuthUser(user)
+            }else{
+                console.log(`[${location}] before after Equal`)
+            }
             setLoading(false)
         });
     }, []);
@@ -109,6 +112,7 @@ export function useUser() {
 }
 
 export async function getUserByNickname(nickname:string):Promise<userProfilePageSchema>{
+    console.log('%cgetUserByNickname',"color:cyan")
     try {
         const q = query(collection(firestore, 'USERS'), where('nickname', '==', nickname));
         const querySnapshot = await getDocs(q);
@@ -120,6 +124,7 @@ export async function getUserByNickname(nickname:string):Promise<userProfilePage
             return {
                 seq: data.seq,
                 name: data.name,
+                email: doc.id,
                 nickname: data.nickname,
                 profile_image_url: data.profile_image_url,
                 gender: data.gender,
@@ -141,8 +146,8 @@ export async function getUserByNickname(nickname:string):Promise<userProfilePage
                     value_arr: data.goal?.value_arr || [],
                 },
                 item_unit_arr: data.item_unit_arr || [],
-                id:{
-                    itemAndUnit: data.id?.itemAndUnit || 0,
+                ids:{
+                    itemAndUnit: data.ids?.itemAndUnit || 0,
                 }
             }
         } else {

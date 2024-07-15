@@ -6,15 +6,16 @@ import {useUser} from "@/lib/auth";
 import {Spinner} from "@/components/ui/spinner";
 
 export default function AuthGuard({ children }: { children: ReactNode }) {
+    console.log('%cAuthGuard',"color:blue")
     const router = useRouter();
     const pathname = usePathname();
-    const {authUser, loading} = useUser()
+    const {authUser, loading} = useUser('protected')
 
     useEffect(() => {
         if (!authUser) {
             router.push(`${PUBLIC.ENTRANCE}?continueTo=${pathname}`);
         }
-    }, [loading, authUser]);
+    }, [authUser]);
 
     if (loading) {
         return <Spinner loading={loading} />; // 로딩 상태를 표시하는 컴포넌트

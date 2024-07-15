@@ -20,34 +20,17 @@ interface UserAspectTabContentProps {
 }
 
 export default function UserAspectTabContent({imgUrl, content, aspect, isEditing}: UserAspectTabContentProps) {
-    const [newImgUrl, setNewImgUrl] = useState(imgUrl);
     const newContentRef = useRef<HTMLTextAreaElement>(null);
-    const [previewImgUrl, setPreviewImgUrl] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
-    const [imageAreaHeight, setImageAreaHeight] = useState('400px')
-    const imageRef = useRef<HTMLImageElement | null>(null);
-    const [imgDimensions, setImgDimensions] = useState({width: 1, height: 1});
-    const [resizedFile, setResizedFile] = useState<File | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const {userProfilePage, addItemUnit} = userProfileStore()
     const itemRecordInputRef = useRef<HTMLInputElement>(null)
     const unitRecordInputRef = useRef<HTMLInputElement>(null)
-    const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const storage = getStorage();
-            const storageRef = ref(storage, `${bucketName}/profile-images/${auth.currentUser?.uid}/${aspect}`);
-            await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(storageRef);
-            setNewImgUrl(url);
-        }
-    };
+    const {userProfilePage, addItemUnit, delItemUnit, immerSetField} = userProfileStore()
     const handleImagePreview = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             console.log("original File: ", file);
             const previewUrl = URL.createObjectURL(file);
-            setPreviewImgUrl(previewUrl);
 
             // 이미지의 원본 크기를 읽어와서 캔버스에 그리기
             const img = new window.Image();
@@ -76,7 +59,10 @@ export default function UserAspectTabContent({imgUrl, content, aspect, isEditing
                                 const resizedFile = new File([blob], file.name, {
                                     type: file.type,
                                 });
-                                setResizedFile(resizedFile);
+                                const resizedImgUrl = URL.createObjectURL(resizedFile);
+                                immerSetField(state => {
+                                    state.userProfilePage[aspect].img = resizedImgUrl
+                                })
                                 console.log("Resized File: ", resizedFile);
                             }
                         }, file.type);
@@ -86,14 +72,44 @@ export default function UserAspectTabContent({imgUrl, content, aspect, isEditing
         }
     };
 
-    const getItemUnit = (id,field)=>{
-        return userProfilePage.item_unit_arr.find(item=>item.id===id)?.[field]
+    const getItemUnit = (id, field) => {
+        return userProfilePage.item_unit_arr.find(item => item.id === id)?.[field]
     }
-    const onItemAdd = ()=>{
+    const onItemAdd = () => {
         const item = itemRecordInputRef.current?.value
         const unit = unitRecordInputRef.current?.value
         addItemUnit(item, unit)
     }
+    const onItemDel = (id) => {
+        delItemUnit(id)
+    }
+
+    type InputChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
+    type InputChangeHandler = (e: InputChangeEvent, field: string, id?: number) => void;
+
+    const handleInputChange: InputChangeHandler = (e, field, id) => {
+        let recipe = null
+        if (field === 'content') recipe = (state) => {
+            state.userProfilePage[aspect].content = e.target.value
+        }
+        else if (field === 'item') {
+            recipe = (state) => {
+                console.log("id = ", id);
+                state.userProfilePage.item_unit_arr.find(item => item.id === id).item = e.target.value;
+            };
+        } else if (field === 'unit') {
+            recipe = (state) => {
+                state.userProfilePage.item_unit_arr.find(item => item.id === id).unit = e.target.value;
+            };
+        } else if (field === 'value') {
+            recipe = (state) => {
+                state.userProfilePage[aspect].value_arr.find(item => item.id === id).value = e.target.value;
+            };
+        }
+        immerSetField(recipe)
+    };
+
+    const aspectImg = userProfilePage[aspect].img;
 
     return (
         <div className={'userAspect flex flex-col items-center'}>
@@ -113,36 +129,30 @@ export default function UserAspectTabContent({imgUrl, content, aspect, isEditing
                         />
                     </div>
                 }
-                {newImgUrl && (
-                    <Image
-                        ref={imageRef}
-                        src={newImgUrl}
-                        alt="aspect"
-                        layout="responsive"
-                        width={imgDimensions.width}
-                        height={imgDimensions.height}
-                        className="rounded-2xl"
-                    />
-                )}
                 <canvas ref={canvasRef} style={{display: 'none'}}></canvas>
-                {isEditing && previewImgUrl && (
-                    <img
-                        src={previewImgUrl}
-                        alt="Preview"
-                        style={{width: '100%', height: 'auto'}}
-                        className={'rounded-2xl'}
-                    />
-                )}
-                {aspect === 'present' && !newImgUrl && !previewImgUrl &&
-                    <BsPersonStanding className={'w-full h-[400px] text-neutral-900 opacity-10'}/>}
-                {aspect === 'goal' && !newImgUrl && !previewImgUrl &&
-                    <GiMuscleUp className={'w-full h-[400px] text-neutral-900 opacity-10'}/>}
+                {
+                    aspectImg ? (
+                            <img
+                                src={aspectImg}
+                                alt="Preview"
+                                style={{width: '100%', height: 'auto'}}
+                                className={'rounded-2xl'}
+                            />
+                        )
+                        : (
+                            aspect === 'present' ?
+                                <BsPersonStanding className={'w-full h-[400px] text-neutral-900 opacity-10'}/>
+                                : aspect === 'goal' &&
+                                <GiMuscleUp className={'w-full h-[400px] text-neutral-900 opacity-10'}/>
+                        )
+                }
+
             </div>
             <div className="user-tab-content mt-4 w-full">
                 {isEditing ? (
                     <>
                         설명:
-                        <Textarea ref={newContentRef} defaultValue={content}/>
+                        <Textarea defaultValue={content} onChange={(e) => handleInputChange(e, 'content')}/>
                     </>
                 ) : (
                     <p>{content}</p>
@@ -150,50 +160,71 @@ export default function UserAspectTabContent({imgUrl, content, aspect, isEditing
 
             </div>
             <div className="user-tab-value_items mt-4 w-full">
-                항목:
                 {
-                    isEditing && (
-                        <>
-                            <div className={'xs:flex'}>
+                    isEditing ? (
+                            <>
+                                항목추가 양식:
+                                <div className={'xs:flex'}>
                                     <Card className="flex p-2 bg-gray-100 space-x-2">
                                         <div className="flex-[0.9]">
-                                            <Input ref={itemRecordInputRef} className="w-full" placeholder={'기록항목명 ex) 몸무게'}/>
+                                            <Input ref={itemRecordInputRef} className="w-full"
+                                                   placeholder={'기록항목명 ex) 몸무게'}/>
                                         </div>
                                         <div className="flex-[0.5]">
                                             <Input ref={unitRecordInputRef} className="w-full" placeholder={'단위'}/>
                                         </div>
                                     </Card>
-                                <div className="flex xs:flex-col max-xs:justify-end xs:items-end space-x-2 max-xs:mt-1">
-                                    <Button variant={'outline'} className={'bg-gray-100 xs:w-full xs:h-full'}>초기화</Button>
-                                    <Button className={'bg-sky-700 xs:w-full xs:h-full'} onClick={onItemAdd}>추가</Button>
+                                    <div className="flex xs:flex-col max-xs:justify-end xs:items-end space-x-2 max-xs:mt-1">
+                                        <Button variant={'outline'}
+                                                className={'bg-gray-100 xs:w-full xs:h-full'}>초기화</Button>
+                                        <Button className={'bg-sky-700 xs:w-full xs:h-full'} onClick={onItemAdd}>추가</Button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="mt-2">
+                                <div className="mt-2">
+                                    항목:
+                                    {
+                                        userProfilePage?.[aspect]?.['value_arr']?.map((data, index) => (
+                                            <div key={index}>
+                                                <Card className="p-2 bg-slate-800 space-y-1">
+                                                    <Input className="w-full" defaultValue={getItemUnit(data.id, 'item')}
+                                                           onChange={(e) => handleInputChange(e, 'item', data.id)}/>
+                                                    <div className="flex space-x-2">
+                                                        <div className="flex-[0.5]">
+                                                            <Input className="w-full" defaultValue={data.value}
+                                                                   onChange={(e) => handleInputChange(e, 'value', data.id)}/>
+                                                        </div>
+                                                        <div className="flex-[0.5]">
+                                                            <Input className="w-full"
+                                                                   defaultValue={getItemUnit(data.id, 'unit')}
+                                                                   onChange={(e) => handleInputChange(e, 'unit', data.id)}/>
+                                                        </div>
+                                                    </div>
+                                                </Card>
+                                                <div className="flex justify-end">
+                                                    <Button variant={'destructive'}
+                                                            onClick={() => onItemDel(data.id)}>삭제</Button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            </>
+                        )
+                        : (
+                            <>
+                                <hr className={'mb-2'}/>
                                 {
                                     userProfilePage?.[aspect]?.['value_arr']?.map((data, index) => (
-                                        <div key={index}>
-                                            <Card className="p-2 bg-slate-800 space-y-1">
-                                                <Input className="w-full" value={getItemUnit(data.id, 'item')}/>
-                                                <div className="flex space-x-2">
-                                                    <div className="flex-[0.5]">
-                                                        <Input className="w-full" value={data.value}/>
-                                                    </div>
-                                                    <div className="flex-[0.5]">
-                                                        <Input className="w-full" value={getItemUnit(data.id, 'unit')}/>
-                                                    </div>
-                                                </div>
-                                            </Card>
+                                        <div key={index} className="">
+                                            <p className="">
+                                                {getItemUnit(data.id, 'item')}: {data.value} {getItemUnit(data.id, 'unit')}
+                                            </p>
                                         </div>
                                     ))
                                 }
-                            </div>
-                        </>
-                    )
+                            </>
+                        )
                 }
-                <div>
-                    <Input value={'asdfqwer'} className={'max-w-fit'}/>
-                    <Button variant={'destructive'}>삭제</Button>
-                </div>
             </div>
         </div>
     );
