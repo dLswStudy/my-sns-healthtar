@@ -19,6 +19,9 @@ import {errorHandle} from "@/lib/utils";
 import {Checkbox} from "@/components/ui/checkbox";
 import {PROTECTED} from "@/lib/routes";
 import {signIn} from "@/lib/auth";
+import useUserProfileStore from "@/stores/client/userProfileStore";
+import ButtonsStorage from "@/components/ButtonsStorage";
+import {useEffect} from "react";
 
 const formSchema = z.object({
     email: z.string().email("올바른 형식의 이메일을 입력해주세요."),
@@ -29,11 +32,18 @@ export type loginSchema = z.infer<typeof formSchema>
 export type loginSchemaV2 = loginSchema & {
     action: string
 }
+
 export default function SignInForm() {
-    const {apiErrorMsg, setApiErrorMsg, setFirestoreUser} = userStore()
+    const {apiErrorMsg,setSignUpUser, setApiErrorMsg, setFirestoreUser} = userStore()
     const router = useRouter();
     const searchParams = useSearchParams();
     const continueTo = searchParams.get("continueTo") ?? PROTECTED.MAIN;
+    const {userProfilePage} = useUserProfileStore()
+    console.log("SignIn userProfilePage = ", userProfilePage);
+
+    useEffect(()=>{
+        setSignUpUser(null)
+    },[])
     const handleClick = (event: any) => {
         setApiErrorMsg('', 'signIn')
     }
@@ -64,7 +74,7 @@ export default function SignInForm() {
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="sign__form space-y-8 w-96">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="sign__form space-y-8 max-xs:w-72 w-96">
                 <div className="sign__form__title">
                     <div className="brandNm">헬스타<span>★</span></div>
                 </div>
@@ -138,6 +148,7 @@ export default function SignInForm() {
                     <Link href={'/signIn'} className={'other-page-button'}>뒤로가기</Link>
                     <Link href={'/signUp'} className={'other-page-button'}>가입 및 로그인</Link>
                 </div>
+                <ButtonsStorage/>
             </form>
         </Form>
     )

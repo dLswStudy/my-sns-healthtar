@@ -1,6 +1,5 @@
 "use client";
 
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {signOut} from "@/lib/auth";
 import {useRouter} from "next/navigation";
 import {
@@ -9,12 +8,17 @@ import {
     MenubarItem, MenubarMenu,
     MenubarSeparator, MenubarTrigger
 } from "@/components/ui/menubar";
-import Link from "next/link";
-import {Search, MessagesSquare , Heart } from "lucide-react";
-import {Input} from "@/components/ui/input";
+import {CirclePlus, Menu} from "lucide-react";
 import useUserStore from "@/stores/client/userStore";
-
-export default function Header() {
+import React from "react";
+import {cn} from "@/lib/utils";
+type Props = {
+    params: { nickname: string },
+    className:string
+}
+export default function UserHeader({params, className}: Props) {
+    const {nickname} = params;
+    const decodedNickname = decodeURIComponent(nickname);
     const {firestoreUser, clearAuthUser, setFirestoreUser} = useUserStore();
     const router = useRouter();
 
@@ -28,31 +32,28 @@ export default function Header() {
     };
 
     return (
-        <header className="flex justify-between items-center p-4 bg-white shadow-md">
+        <div id={'user-header'} className={cn('fixed left-0 top-0 right-0 flex justify-between items-center p-4 bg-white shadow-md', className)}>
             <div>
-                <h1 className="text-xl font-bold">Healthtar ★</h1>
+                <h1 className="text-xl font-bold">{decodedNickname}</h1>
             </div>
             <div className="flex items-center space-x-4">
-                <div className="relative ml-auto flex-1 md:grow-0">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder="Search..."
-                        className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
-                    />
-                </div>
-                <Menubar className={'border-none'}>
+                <button aria-label="PostAdd">
+                    <CirclePlus className="w-6 h-6"/>
+                </button>
+                <Menubar className='border-none'>
                     <MenubarMenu>
                         <MenubarTrigger>
-                            <Avatar>
-                                <AvatarImage src={firestoreUser?.profile_image_url}/>
-                                <AvatarFallback>USER</AvatarFallback>
-                            </Avatar>
+                            <Menu/>
                         </MenubarTrigger>
                         <MenubarContent>
-                            <MenubarItem inset onClick={handleProfile}>
+                            <MenubarItem inset>
                                 <button className={'w-full'}>
-                                    Profile: {firestoreUser?.nickname}
+                                    A 설정
+                                </button>
+                            </MenubarItem>
+                            <MenubarItem inset>
+                                <button className={'w-full'}>
+                                    B 설정
                                 </button>
                             </MenubarItem>
                             <MenubarSeparator/>
@@ -63,6 +64,6 @@ export default function Header() {
                     </MenubarMenu>
                 </Menubar>
             </div>
-        </header>
+        </div>
     );
 }

@@ -40,6 +40,7 @@ const formSchema = z.object({
 type signupSchema = z.infer<typeof formSchema>
 export type signupSchemaV2 = signupSchema & {
     profileImageUrl: string,
+    posts: Array<number>
 }
 const years = Array.from({length: 100}, (_, i) => '' + (new Date().getFullYear() - i));
 const months = Array.from({length: 12}, (_, i) => i + 1 < 10 ? '0' + (i + 1) : '' + (i + 1));
@@ -56,6 +57,7 @@ export default function SignupForm() {
     const router = useRouter();
 
     useEffect(() => {
+        setSignUpUser(null)
         setApiErrorMsg('','signUp')
     }, []);
 
@@ -85,7 +87,7 @@ export default function SignupForm() {
 
     async function onSubmit(data: signupSchema) {
         const profileImageUrl = await uploadImage(data.profileImage as File, data.nickName);
-        const userData: signupSchemaV2 = {...data, profileImageUrl}
+        const userData: signupSchemaV2 = {...data, profileImageUrl,posts:[]}
         let erMsg = ''
         setSignUpUser(userData)
         await authSendSignInLinkToEmail(data.email)

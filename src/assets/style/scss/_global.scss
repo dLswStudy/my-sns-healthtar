@@ -1,3 +1,9 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    width: 100%;
+}
 body{
     min-height: 800px;
     font-size: 16px;
@@ -5,10 +11,16 @@ body{
     line-height: 1.4;
     padding-bottom: 50px;
     /*font-family: 'NotoSansKR-ExtraBold', sans-serif;*/
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
 }
 img{
     display: block;
 }
 a{
     text-decoration: none;
+}
+.m-menubarH{
+    height: 43px;
 }

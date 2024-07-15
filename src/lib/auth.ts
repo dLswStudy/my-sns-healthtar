@@ -1,11 +1,12 @@
 import {useEffect, useState} from "react";
 import {
-    signOut as firebaseSignOut,
     browserLocalPersistence,
     browserSessionPersistence,
+    onAuthStateChanged,
+    sendSignInLinkToEmail,
     setPersistence,
     signInWithEmailAndPassword,
-    onAuthStateChanged, sendSignInLinkToEmail,
+    signOut as firebaseSignOut,
 } from "firebase/auth";
 
 import {
@@ -21,6 +22,7 @@ import {signupSchemaV2} from "@/app/(public)/signUp/_component/signupForm";
 import {updateDoc} from "firebase/firestore";
 import moment from "moment/moment";
 import {generateTemporaryPassword} from "@/lib/utils";
+import {userProfilePageSchema} from "@/lib/schemas";
 
 export async function signUp(data: signupSchemaV2, setFirestoreUser) {
     try {
@@ -58,16 +60,16 @@ export async function signUp(data: signupSchemaV2, setFirestoreUser) {
 export async function signIn(email: string, password: string, rememberMe: boolean = false, setFirestoreUser) {
     try {
         await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+        const userDocRef = doc(firestore, "USERS", email)
+        const userDocSnap = await getDoc(userDocRef);
+        if(userDocSnap.exists()){
+            await setFirestoreUser(userDocSnap.data())
+        }else
+            throw new Error("user not found")
         await signInWithEmailAndPassword(auth, email, password);
         console.log("auth.currentUser.emailVerified = ", auth.currentUser.emailVerified);
         const message = `sign-in: ${email} successfully`;
         console.log(message)
-        const userDocRef = doc(firestore, "USERS", email)
-        const userDocSnap = await getDoc(userDocRef);
-        if(userDocSnap.exists()){
-            setFirestoreUser(userDocSnap.data())
-        }else
-            throw new Error("user not found")
         return Response.json(message)
     } catch (error) {
         console.log(`ErrorName: ${error.name}`);
@@ -97,7 +99,8 @@ export function useUser() {
         console.log("authUser = ", authUser);
         return onAuthStateChanged(auth, (user) => {
             console.log("onAuthStateChanged Boolean user = ", Boolean(user));
-            setAuthUser(user)
+            if(Boolean(authUser) != Boolean(user))
+                setAuthUser(user)
             setLoading(false)
         });
     }, []);
@@ -105,7 +108,7 @@ export function useUser() {
     return {authUser, loading};
 }
 
-export async function getUserByNickname(nickname:string){
+export async function getUserByNickname(nickname:string):Promise<userProfilePageSchema>{
     try {
         const q = query(collection(firestore, 'USERS'), where('nickname', '==', nickname));
         const querySnapshot = await getDocs(q);
@@ -113,7 +116,35 @@ export async function getUserByNickname(nickname:string){
         // 쿼리 결과 처리
         if (!querySnapshot.empty) {
             const doc = querySnapshot.docs[0];
-            return doc.data()
+            const data = doc.data()
+            return {
+                seq: data.seq,
+                name: data.name,
+                nickname: data.nickname,
+                profile_image_url: data.profile_image_url,
+                gender: data.gender,
+                helloword: data.helloword,
+                birth: data.birth,
+                createdAt: data.createdAt,
+                updatedAt: data.updatedAt,
+                posts: data.posts?.length || 0,
+                followers: data.followers?.length || 0,
+                followings: data.followings?.length || 0,
+                present: {
+                    img: data.present?.img || '',
+                    content: data.present?.content || '',
+                    value_arr: data.present?.value_arr || [],
+                },
+                goal: {
+                    img: data.goal?.img || '',
+                    content: data.goal?.content || '',
+                    value_arr: data.goal?.value_arr || [],
+                },
+                item_unit_arr: data.item_unit_arr || [],
+                id:{
+                    itemAndUnit: data.id?.itemAndUnit || 0,
+                }
+            }
         } else {
             console.log('No matching documents.');
             return null

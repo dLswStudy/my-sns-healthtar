@@ -7,6 +7,7 @@ import {onAuthStateChanged} from "firebase/auth";
 import {auth} from "@/firebase/firebase.client.config";
 import {useUser} from "@/lib/auth";
 import userStore from "@/stores/client/userStore";
+import {Spinner} from "@/components/ui/spinner";
 
 export default function AuthRaise({ children }: { children: ReactNode }) {
     const router = useRouter();
@@ -20,7 +21,7 @@ export default function AuthRaise({ children }: { children: ReactNode }) {
     }, [authUser]);
 
     if (loading) {
-        return <div>Loading...</div>; // 로딩 상태를 표시하는 컴포넌트
+        return <Spinner loading={loading} />; // 로딩 상태를 표시하는 컴포넌트
     }
 
     if (!authUser) {

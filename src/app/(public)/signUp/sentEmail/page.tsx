@@ -7,7 +7,7 @@ import {signUp} from "@/lib/auth";
 import {errorHandle} from "@/lib/utils";
 
 export default function SentEmail() {
-    const {emailBeforeAuth, signUpUser, setFirestoreUser} = userStore()
+    const {emailBeforeAuth, signUpUser, setSignUpUser, setFirestoreUser} = userStore()
     const [errMsg, setErrMsg] = useState('');
     useEffect(() => {
         if (isSignInWithEmailLink(auth, window.location.href)) {

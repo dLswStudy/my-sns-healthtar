@@ -105,3 +105,39 @@ function containsNLengthSubstring(A, B, n) {
   return false;  // 모든 검사 후 찾지 못했으면 false 반환
 }
 
+export const updateAwithB = (objA, objB) => {
+  const updatedA = { ...objA };
+
+  for (const key in objA) {
+    if (objB.hasOwnProperty(key)) {
+      updatedA[key] = objB[key];
+    }
+  }
+  return updatedA;
+};
+
+export const asyncSet = (store: any, field: string, newValue: any): Promise<void> => {
+  const {setField} = store()
+  return new Promise((resolve) => {
+    const unsubscribe = store.subscribe((state) => {
+      if (state[field] === newValue) {
+        unsubscribe();
+        resolve();
+      }
+    });
+    setField(field, newValue);
+  });
+}
+
+export const asyncWait = (store, field) => {
+  console.log('asyncSet')
+  return new Promise<void>((resolve) => {
+    const unsubscribe = store.subscribe((state) => {
+      if (state[field] !== null) {
+        console.log('asyncSet state[field] !== null')
+        unsubscribe();
+        resolve();
+      }
+    });
+  });
+};

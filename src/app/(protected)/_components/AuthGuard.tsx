@@ -3,6 +3,7 @@ import {usePathname, useRouter} from "next/navigation";
 import {ReactNode, useEffect, useState} from "react";
 import {PUBLIC} from "@/lib/routes";
 import {useUser} from "@/lib/auth";
+import {Spinner} from "@/components/ui/spinner";
 
 export default function AuthGuard({ children }: { children: ReactNode }) {
     const router = useRouter();
@@ -13,10 +14,10 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
         if (!authUser) {
             router.push(`${PUBLIC.ENTRANCE}?continueTo=${pathname}`);
         }
-    }, [router, authUser]);
+    }, [loading, authUser]);
 
     if (loading) {
-        return <div>Loading...</div>; // 로딩 상태를 표시하는 컴포넌트
+        return <Spinner loading={loading} />; // 로딩 상태를 표시하는 컴포넌트
     }
 
     if (!loading && authUser) {

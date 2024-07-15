@@ -7,13 +7,14 @@ import {ReactNode, useEffect, useState} from "react";
 import {usePathname, useRouter} from "next/navigation";
 import {PUBLIC} from "@/lib/routes";
 import {useUser} from "@/lib/auth";
+import {Spinner} from "@/components/ui/spinner";
 
 export function Auth({ children }: { children: ReactNode }) {
     const {loading} = useUser()
 
     return (
         <>
-            {loading ? <div>Loading...</div> : children}
+            {loading ? <Spinner loading={loading} /> : children}
         </>
     );
 }
