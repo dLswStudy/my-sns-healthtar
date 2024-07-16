@@ -152,6 +152,7 @@ export const uploadImage = async (file: File, middle_path:string, id: string): P
   return await getDownloadURL(storageRef);
 }
 
+//부모 요소의 폭에 맞춰 이미지 조정
 export const handleImagePreview = (e: ChangeEvent<HTMLInputElement>, canvasRef, setImgFileFunc, setImgUrlFunc) => {
   if (e.target.files?.[0]) {
     const file = e.target.files[0];
@@ -196,3 +197,66 @@ export const handleImagePreview = (e: ChangeEvent<HTMLInputElement>, canvasRef, 
     };
   }
 };
+
+// 정사각형 안에 사진이 모두 포함되게 조정
+export const handleAddPostPreview = (e: ChangeEvent<HTMLInputElement>, canvasRef, setImgFileFunc, setImgUrlFunc, maxWidth) => {
+  if (e.target.files?.[0]) {
+    const file = e.target.files[0];
+    console.log("original File: ", file);
+    const previewUrl = URL.createObjectURL(file);
+
+    // 이미지의 원본 크기를 읽어와서 캔버스에 그리기
+    const img = new window.Image();
+    img.src = previewUrl;
+    img.onload = () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // 설정하려는 부모 요소의 크기
+          let width, height;
+          const aspectRatio = img.width / img.height;
+          if (img.width > img.height) {
+            width = maxWidth;
+            height = maxWidth / aspectRatio;
+          } else {
+            height = maxWidth;
+            width = maxWidth * aspectRatio;
+          }
+
+          // 캔버스 크기 설정
+          canvas.width = width;
+          canvas.height = height;
+
+          // 이미지 캔버스에 그리기
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 캔버스에서 Blob 객체로 변환
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const resizedFile = new File([blob], file.name, {
+                type: file.type,
+              });
+              const resizedUrl = URL.createObjectURL(resizedFile);
+              setImgUrlFunc(resizedUrl)
+              setImgFileFunc(resizedFile)
+              console.log("Resized File: ", resizedFile);
+            }
+          }, file.type);
+        }
+      }
+    };
+  }
+};
+
+
+export async function hasCamera() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+    return videoDevices.length > 0;
+  } catch (error) {
+    console.error("Error checking for cameras:", error);
+    return false;
+  }
+}

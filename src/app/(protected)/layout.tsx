@@ -4,7 +4,7 @@ import MobileNavigator from "@/app/(protected)/_components/MobileNavigator";
 
 export default function Layout({children}: { children: ReactNode }) {
     return (
-        <div id={'protected'} className={'w-full h-full'}>
+        <div id={'protected'} className={'w-full'}>
             <AuthGuard>
                 {children}
             </AuthGuard>

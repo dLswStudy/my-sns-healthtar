@@ -70,6 +70,7 @@ export default function Profile({params}: Props) {
         return () => {
             console.log("userProfilePage Unmount")
             setField('userProfilePage', null);
+            setField('images', null);
         };
     }, [userProfilePageRQ]);
 

@@ -1,6 +1,6 @@
-import {UserProfileImagesSchema, userProfilePageSchema} from "@/lib/schemas";
+import {GetRecordItemsResponse, UserProfileImagesSchema, userProfilePageSchema} from "@/lib/schemas";
 import {doc, getDoc, setDoc} from "firebase/firestore";
-import {firestore} from "@/firebase/firebase.client.config";
+import {auth, firestore} from "@/firebase/firebase.client.config";
 import moment from "moment";
 import {uploadImage} from "@/lib/utils";
 import {goalImgMiddlePath, presentImgMiddlePath, profileImgMiddlePath} from "@/stores/store.config";
@@ -39,4 +39,30 @@ export async function setProfile(profile:userProfilePageSchema,images:UserProfil
         console.log(`ErrorMessage: ${error.message}`);
         return Response.json(error, {status: 500});
     }
+}
+
+
+
+export async function getRecordItems(){
+    try {
+        const docRef = doc(firestore, 'USERS', auth.currentUser.email);
+        const docSnap = await getDoc(docRef);
+        const docData = docSnap.data()
+        const res: GetRecordItemsResponse = {
+            present_value_arr: [],
+            goal_value_arr: [],
+            item_unit_arr: [],
+        }
+        res.present_value_arr = docData.present.value_arr
+        res.goal_value_arr = docData.goal.value_arr
+        res.item_unit_arr = docData.item_unit_arr
+        return Response.json(res,{status:200})
+    } catch (error) {
+        console.error('Error while getRecordItems: ', error);
+        console.log(`ErrorName: ${error.name}`);
+        console.log(`ErrorMessage: ${error.message}`);
+        return Response.json(error, {status: 500});
+    }
+
+
 }

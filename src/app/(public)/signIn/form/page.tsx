@@ -147,7 +147,7 @@ export default function SignInForm() {
                     <Link href={'/signIn'} className={'other-page-button'}>뒤로가기</Link>
                     <Link href={'/signUp'} className={'other-page-button'}>가입 및 로그인</Link>
                 </div>
-                <ButtonsStorage/>
+                {/*<ButtonsStorage/>*/}
             </form>
         </Form>
     )
