@@ -4,13 +4,14 @@ import {GiMuscleUp} from "react-icons/gi";
 import {getStorage, ref, uploadBytes, getDownloadURL} from "firebase/storage";
 import {auth} from "@/firebase/firebase.client.config";
 import {Textarea} from "@/components/ui/textarea";
-import {bucketName} from "@/app.config";
+import {bucketName} from "@/stores/store.config";
 import Image from "next/image";
 import {is} from "immutable";
 import {Input} from "@/components/ui/input";
 import {Card} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import userProfileStore from "@/stores/client/userProfileStore";
+import {handleImagePreview} from "@/lib/utils";
 
 interface UserAspectTabContentProps {
     imgUrl: string;
@@ -20,57 +21,31 @@ interface UserAspectTabContentProps {
 }
 
 export default function UserAspectTabContent({imgUrl, content, aspect, isEditing}: UserAspectTabContentProps) {
-    const newContentRef = useRef<HTMLTextAreaElement>(null);
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const itemRecordInputRef = useRef<HTMLInputElement>(null)
     const unitRecordInputRef = useRef<HTMLInputElement>(null)
     const {userProfilePage, addItemUnit, delItemUnit, immerSetField} = userProfileStore()
-    const handleImagePreview = (e: ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            console.log("original File: ", file);
-            const previewUrl = URL.createObjectURL(file);
 
-            // 이미지의 원본 크기를 읽어와서 캔버스에 그리기
-            const img = new window.Image();
-            img.src = previewUrl;
-            img.onload = () => {
-                const canvas = canvasRef.current;
-                if (canvas) {
-                    const ctx = canvas.getContext('2d');
-                    if (ctx) {
-                        // 설정하려는 부모 요소의 크기
-                        const maxWidth = 250;
-                        const aspectRatio = img.width / img.height;
-                        const width = maxWidth;
-                        const height = maxWidth / aspectRatio;
-
-                        // 캔버스 크기 설정
-                        canvas.width = width;
-                        canvas.height = height;
-
-                        // 이미지 캔버스에 그리기
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        // 캔버스에서 Blob 객체로 변환
-                        canvas.toBlob((blob) => {
-                            if (blob) {
-                                const resizedFile = new File([blob], file.name, {
-                                    type: file.type,
-                                });
-                                const resizedImgUrl = URL.createObjectURL(resizedFile);
-                                immerSetField(state => {
-                                    state.userProfilePage[aspect].img = resizedImgUrl
-                                })
-                                console.log("Resized File: ", resizedFile);
-                            }
-                        }, file.type);
-                    }
-                }
-            };
-        }
-    };
+    const setPresentImgFile = (file) => {
+        immerSetField(state => {
+            state.images['present_img_file'] = file
+        })
+    }
+    const setGoalImgFile = (file) => {
+        immerSetField(state => {
+            state.images['goal_img_file'] = file
+        })
+    }
+    const setPresentImgUrl = (url) => {
+        immerSetField(state => {
+            state.userProfilePage.present.img = url
+        })
+    }
+    const setGoalImgUrl = (url) => {
+        immerSetField(state => {
+            state.userProfilePage.goal.img = url
+        })
+    }
 
     const getItemUnit = (id, field) => {
         return userProfilePage.item_unit_arr.find(item => item.id === id)?.[field]
@@ -121,9 +96,8 @@ export default function UserAspectTabContent({imgUrl, content, aspect, isEditing
                         <input
                             type="file"
                             accept="image/*"
-                            ref={fileInputRef}
                             onChange={(e) => {
-                                handleImagePreview(e);
+                                handleImagePreview(e, canvasRef, aspect=='present'?setPresentImgFile:setGoalImgFile, aspect=='present'?setPresentImgUrl:setGoalImgUrl);
                             }}
                             className="absolute inset-0 opacity-0 cursor-pointer z-20"
                         />

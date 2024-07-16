@@ -10,13 +10,14 @@ import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
 import userStore from "@/stores/client/userStore";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
-import {errorHandle, exportNickname, validatePassword} from "@/lib/utils";
+import {errorHandle, exportNickname, uploadImage, validatePassword} from "@/lib/utils";
 import {useRouter} from "next/navigation";
 import {getDownloadURL, ref, uploadBytes} from "@firebase/storage";
-import {bucketName} from "@/app.config";
+import {bucketName, profileImgMiddlePath} from "@/stores/store.config";
 import {useEffect, useState} from "react";
 import {storage} from "@/firebase/firebase.client.config";
 import {authSendSignInLinkToEmail} from "@/lib/auth";
+import moment from "moment";
 
 const MAX_FILE_SIZE = 2000000; // 2MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/jpg"];
@@ -79,14 +80,8 @@ export default function SignupForm() {
         }
     })
 
-    const uploadImage = async (file: File, nickname: string): Promise<string> => {
-        const storageRef = ref(storage, `${bucketName}/profile-images/${nickname}`);
-        await uploadBytes(storageRef, file);
-        return await getDownloadURL(storageRef);
-    }
-
     async function onSubmit(data: signupSchema) {
-        const profileImageUrl = await uploadImage(data.profileImage as File, data.nickName);
+        const profileImageUrl = await uploadImage(data.profileImage as File, profileImgMiddlePath, data.nickName+moment().format('YYYYMMDDHHmmSS'));
         const userData: signupSchemaV2 = {...data, profileImageUrl,posts:[]}
         let erMsg = ''
         setSignUpUser(userData)

@@ -20,6 +20,7 @@ import {userProfilePageSchema} from "@/lib/schemas";
 import {Spinner} from "@/components/ui/spinner";
 import {setProfile} from "@/app/api/profile/profileService";
 import SpinByW from "@/components/ui/spinnerW";
+import {handleImagePreview} from "@/lib/utils";
 
 
 type Props = {
@@ -29,12 +30,9 @@ export default function Profile({params}: Props) {
     const {nickname} = params;
     const decodedNickname: string = decodeURIComponent(nickname);
     const {firestoreUser,setFirestoreUser} = userStore()
-    const {setField, userProfilePage,immerSetField} = userProfileStore();
+    const {setField, userProfilePage,images,immerSetField} = userProfileStore();
     const [isEditing, setIsEditing] = useState(false);
-
-    const newNicknameRef = useRef<HTMLInputElement>(null);
-    const newNameRef = useRef<HTMLInputElement>(null);
-    const newHelloWordRef = useRef<HTMLTextAreaElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const isMine = decodedNickname === firestoreUser?.nickname
     const isXs = useMediaQuery({query: '(max-width: 480px)'});
     const router = useRouter()
@@ -46,15 +44,15 @@ export default function Profile({params}: Props) {
     });
 
     const {mutate:profilePutMutate, status:putStatus, error:putError} = useMutation({
-        mutationFn: (userProfilePage: userProfilePageSchema) => setProfile(userProfilePage, setFirestoreUser),
+        mutationFn: (userProfilePage: userProfilePageSchema) => setProfile(userProfilePage, images, setFirestoreUser),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['userProfile'] })
             alert('프로필 업데이트 완료')
-            setIsEditing(false)
             // 닉네임이 변경된 경우 경로 업데이트
             if (userProfilePage.nickname !== decodedNickname) {
                 router.replace(`/users/${(userProfilePage.nickname)}`);
             }
+            setIsEditing(false)
         },
         onError: (error) => {
             // 에러 처리
@@ -66,6 +64,7 @@ export default function Profile({params}: Props) {
         if (userProfilePageRQ) {
             console.log("userProfilePageRQ = ", userProfilePageRQ);
             setField('userProfilePage', userProfilePageRQ);
+
         }
 
         return () => {
@@ -78,6 +77,17 @@ export default function Profile({params}: Props) {
         return <Spinner loading={status==='pending'} />;
     }
 
+    const setProfileImgFile = (file) => {
+        immerSetField(state => {
+            state.images['profile_img_file'] = file
+        })
+    }
+    const setProfileImgUrl = (url) => {
+        immerSetField(state => {
+            //임시 미리보기용
+            state.userProfilePage['profile_image_url'] = url
+        })
+    }
     const onEditExecute = () => {
         console.log("userProfilePage = ", userProfilePage);
         setIsEditing(true)
@@ -96,6 +106,7 @@ export default function Profile({params}: Props) {
 
     return (
         <div id={'user'}>
+            <canvas ref={canvasRef} style={{display: 'none'}}></canvas>
             <UserHeader params={params} className={'headerH z-50'}/>
             <div className="headerH"></div>
             <div className="bandBG absolute top-40 w-full h-36 bg-slate-700 -z-10"></div>
@@ -103,16 +114,33 @@ export default function Profile({params}: Props) {
                 <Card id={'profile-main'} className={'w-[300px] xs:w-[470px]'}>
                     <div className="container">
                         <div className="flex justify-end pb-2 space-x-2">
-                            {isMine && !isEditing && <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'} onClick={onEditExecute}>프로필 편집</Button>}
-                            {isMine && isEditing && <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'} onClick={onEditCancel} variant={'secondary'}>편집 취소</Button>}
+                            {isMine && !isEditing && <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'}
+                                                             onClick={onEditExecute}>프로필 편집</Button>}
+                            {isMine && isEditing && <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'}
+                                                            onClick={onEditCancel} variant={'secondary'}>편집 취소</Button>}
                             {isMine && isEditing &&
-                                <SpinByW loading={putStatus==='pending'}>
-                                    <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'} onClick={onEditSave}>프로필 저장</Button>
+                                <SpinByW loading={putStatus === 'pending'}>
+                                    <Button className={'max-xs:text-xs'} size={isXs ? 'sm' : 'default'}
+                                            onClick={onEditSave}>프로필 저장</Button>
                                 </SpinByW>
                             }
                         </div>
                         <div className="max-xs:space-y-3 xs:flex xs:space-x-3">
-                            <div className="profile-image max-xs:flex max-xs:justify-center">
+                            <div className="profile-image flex flex-col items-center relative">
+                                {isEditing && <div>※ 이미지를 클릭하여 업로드</div>}
+                                {isEditing &&
+                                    <div
+                                        className="absolute inset-0 flex items-center justify-center opacity-60 cursor-pointer z-10">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                handleImagePreview(e,canvasRef, setProfileImgFile, setProfileImgUrl);
+                                            }}
+                                            className="absolute inset-0 opacity-0 cursor-pointer z-20"
+                                        />
+                                    </div>
+                                }
                                 <Avatar className={'w-32 h-32 xs:w-40 xs:h-40'}>
                                     <AvatarImage src={userProfilePage?.profile_image_url}/>
                                     <AvatarFallback>USER</AvatarFallback>
@@ -123,20 +151,24 @@ export default function Profile({params}: Props) {
                                     <div className={'space-y-2'}>
                                         <div>
                                             닉네임:
-                                            <Input defaultValue={userProfilePage?.nickname} onChange={(e) => handleInputChange(e, 'nickname')} />
+                                            <Input defaultValue={userProfilePage?.nickname}
+                                                   onChange={(e) => handleInputChange(e, 'nickname')}/>
                                         </div>
                                         <div>
                                             이름:
-                                            <Input defaultValue={userProfilePage?.name} onChange={(e) => handleInputChange(e, 'name')} />
+                                            <Input defaultValue={userProfilePage?.name}
+                                                   onChange={(e) => handleInputChange(e, 'name')}/>
                                         </div>
                                         <div>
                                             인사말:
-                                            <Textarea defaultValue={userProfilePage?.helloword} onChange={(e) => handleInputChange(e, 'helloword')} />
+                                            <Textarea defaultValue={userProfilePage?.helloword}
+                                                      onChange={(e) => handleInputChange(e, 'helloword')}/>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="">
-                                        <div className="name font-bold text-xl xs:text-2xl">{userProfilePage?.name}</div>
+                                        <div
+                                            className="name font-bold text-xl xs:text-2xl">{userProfilePage?.name}</div>
                                         <p className={'mt-2 max-xs:text-sm'}>{userProfilePage?.helloword}</p>
                                     </div>
                                 )}

@@ -1,9 +1,16 @@
-import { userProfilePageSchema } from "@/lib/schemas";
+import {UserProfileImagesSchema, userProfilePageSchema} from "@/lib/schemas";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import {produce} from "immer";
 
+const initialState = {
+    images:{
+        profile_img_file:null,
+        present_img_file:null,
+        goal_img_file:null,
+    },
+};
 const createSetters = (set) => ({
     setField: (field, value) => set(state => ({ [field]: value })),
     setNestedField: (field, nestedField, value) => set(state => {
@@ -27,6 +34,8 @@ const createSetters = (set) => ({
 
 interface UserProfileStoreState {
     userProfilePage: userProfilePageSchema;
+    images:UserProfileImagesSchema;
+
     setField: (field: string, value: any) => void;
     setNestedField: (field: string, nestedField: string, value: any) => void;
     addItemUnit: (item: string, unit: string) => void;
@@ -38,7 +47,8 @@ const useUserProfileStore = create<UserProfileStoreState>()(
     devtools(
         immer(
             (set) => ({
-                userProfilePage: null,
+                userProfilePage: null, //프로필 업데이트 용
+                images:initialState.images, //임시저장
                 ...createSetters(set)
             })
         )

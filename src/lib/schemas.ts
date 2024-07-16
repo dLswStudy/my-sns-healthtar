@@ -1,3 +1,5 @@
+import exp from "node:constants";
+
 export type UserSchema = {
     seq: number;
     email: string;
@@ -55,4 +57,10 @@ type itemAndUnit = {
     id:number;
     item:string;
     unit:string;
+}
+
+export type UserProfileImagesSchema={
+    profile_img_file:File;
+    present_img_file:File;
+    goal_img_file:File;
 }
