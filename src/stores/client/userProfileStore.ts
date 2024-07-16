@@ -10,6 +10,7 @@ const initialState = {
         present_img_file:null,
         goal_img_file:null,
     },
+    myPosts:[]
 };
 const createSetters = (set) => ({
     setField: (field, value) => set(state => ({ [field]: value })),
@@ -35,6 +36,7 @@ const createSetters = (set) => ({
 interface UserProfileStoreState {
     userProfilePage: userProfilePageSchema;
     images:UserProfileImagesSchema;
+    myPosts:Array<any>
 
     setField: (field: string, value: any) => void;
     setNestedField: (field: string, nestedField: string, value: any) => void;
@@ -49,6 +51,7 @@ const useUserProfileStore = create<UserProfileStoreState>()(
             (set) => ({
                 userProfilePage: null, //프로필 업데이트 용
                 images:initialState.images, //임시저장
+                myPosts:initialState.myPosts,
                 ...createSetters(set)
             })
         )

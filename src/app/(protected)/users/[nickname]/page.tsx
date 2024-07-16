@@ -15,22 +15,25 @@ import {PROTECTED} from "@/lib/routes";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
 import userProfileStore from "@/stores/client/userProfileStore";
-import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
+import {useQuery, useMutation, useQueryClient, useInfiniteQuery} from "@tanstack/react-query";
 import {userProfilePageSchema} from "@/lib/schemas";
 import {Spinner} from "@/components/ui/spinner";
 import {setProfile} from "@/app/api/profile/profileService";
 import SpinByW from "@/components/ui/spinnerW";
 import {handleImagePreview} from "@/lib/utils";
+import {getMyPosts} from "@/app/api/post/postService";
+import PostVertical from "@/app/(protected)/post/_components/postVertical";
+import PostHorizontal from "@/app/(protected)/post/_components/postHorizontal";
 
 
 type Props = {
     params: { nickname: string },
 }
-export default function Profile({params}: Props) {
+export default function User({params}: Props) {
     const {nickname} = params;
     const decodedNickname: string = decodeURIComponent(nickname);
     const {firestoreUser,setFirestoreUser} = userStore()
-    const {setField, userProfilePage,images,immerSetField} = userProfileStore();
+    const {setField, userProfilePage,images,immerSetField, myPosts} = userProfileStore();
     const [isEditing, setIsEditing] = useState(false);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const isMine = decodedNickname === firestoreUser?.nickname
@@ -38,9 +41,27 @@ export default function Profile({params}: Props) {
     const router = useRouter()
     const queryClient = useQueryClient();
 
+    const fetchMyPosts = async ({pageParam = null}) => {
+        const {posts, lastVisible} = await getMyPosts(firestoreUser.seq, pageParam);
+        return {posts, nextPage: lastVisible};
+    };
+
     const {data: userProfilePageRQ, status, error, isFetching} = useQuery({
         queryKey: ['userProfile', decodedNickname],
         queryFn: async (): Promise<userProfilePageSchema> => getUserByNickname(decodedNickname)
+    });
+
+    const {
+        data:myPostsRQ,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        status:myPostsStauts,
+    } = useInfiniteQuery({
+        queryKey: ['myPosts', firestoreUser.seq],
+        queryFn: fetchMyPosts,
+        getNextPageParam: (lastPage) => lastPage.nextPage || undefined,
+        initialPageParam: null,
     });
 
     const {mutate:profilePutMutate, status:putStatus, error:putError} = useMutation({
@@ -64,15 +85,18 @@ export default function Profile({params}: Props) {
         if (userProfilePageRQ) {
             console.log("userProfilePageRQ = ", userProfilePageRQ);
             setField('userProfilePage', userProfilePageRQ);
-
+        }
+        if (myPostsRQ) {
+            setField('myPosts', myPostsRQ);
         }
 
         return () => {
             console.log("userProfilePage Unmount")
             setField('userProfilePage', null);
             setField('images', null);
+            setField('myPosts', null);
         };
-    }, [userProfilePageRQ]);
+    }, [userProfilePageRQ, myPostsRQ]);
 
     if (!userProfilePage) {
         return <Spinner loading={status==='pending'} />;
@@ -204,8 +228,18 @@ export default function Profile({params}: Props) {
                         </Tabs>
                     </div>
                 </Card>
-                <div id={'profile-posts'} className="post-container">
-
+                <div id={'profile-posts'} className="post-container mt-5">
+                    {
+                        myPosts?.['pages']?.map((page, i) => (
+                            <div key={i}>
+                                {page.posts.map((post, j) => (
+                                    <div key={j}>
+                                        <PostHorizontal post={post} />
+                                    </div>
+                                ))}
+                            </div>
+                        ))
+                    }
                 </div>
             </div>
             <div className="m-menubarH"></div>

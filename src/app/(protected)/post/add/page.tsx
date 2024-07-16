@@ -23,12 +23,12 @@ export default function PostAdd() {
     const queryClient = useQueryClient();
     const router = useRouter()
 
-    const {mutate:postAddMutate, status:addStatus, error:addError} = useMutation({
+    const {mutateAsync:postAddMutate, status:addStatus, error:addError} = useMutation({
         mutationFn: async (postToAdd:PostAddSchema) => addPost(postToAdd, tempData.imageFiles.mainPhoto),
-        onSuccess: (res) => {
+        onSuccess: async (res) => {
             console.log("addPost res = ", res);
             if(res.ok){
-                queryClient.invalidateQueries({ queryKey: ['posts'] })
+                await queryClient.invalidateQueries({ queryKey: ['posts'] })
                 alert('게시물 생성 완료')
                 router.replace(PROTECTED.MAIN);
             }else{
@@ -98,7 +98,7 @@ export default function PostAdd() {
         if(!addPostData.content){
             alert('내용을 입력해주세요.')
         }
-        postAddMutate(addPostData)
+        await postAddMutate(addPostData)
     }
     return (
         <div id={'Post-add'}>

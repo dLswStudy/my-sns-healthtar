@@ -5,7 +5,7 @@ const nextConfig = {
         includePaths: [path.join(__dirname, 'style')],
     },
     images: {
-        domains: ['http://localhost:3000', process.env.NEXT_PUBLIC_APP_DOMAIN], // 허용할 이미지 도메인 추가
+        domains: ['http://localhost:3000', process.env.NEXT_PUBLIC_APP_DOMAIN, 'firebasestorage.googleapis.com'], // 허용할 이미지 도메인 추가
     },
     async rewrites() {
         return [

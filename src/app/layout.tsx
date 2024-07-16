@@ -2,7 +2,6 @@ import type {Metadata} from "next";
 import "../assets/style/app.scss";
 import "../assets/style/tailwind/index.css";
 import {Auth} from "@/app/_component/Auth";
-import MobileNavigator from "@/app/(protected)/_components/MobileNavigator";
 import Providers from "@/app/_component/Provider";
 
 export const metadata: Metadata = {
@@ -10,19 +9,22 @@ export const metadata: Metadata = {
     description: "My sns project - App for Healthy Pleasures",
 };
 
-export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
+export default function RootLayout(props: {
     children: React.ReactNode;
-}>) {
+    modal: React.ReactNode;
+}) {
     return (
         <html>
         <body>
         <Providers>
             <Auth>
-                {children}
+                <>
+                    {props.children}
+                    {props.modal}
+                </>
             </Auth>
         </Providers>
+        <div id="portal"/>
         </body>
         </html>
     );

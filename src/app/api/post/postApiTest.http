@@ -1,0 +1,5 @@
+### 1. getPost
+GET {{domain}}/api/post/getPost/7
+
+
+

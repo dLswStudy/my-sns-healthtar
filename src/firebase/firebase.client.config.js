@@ -28,7 +28,7 @@ const firebaseClientConfig = {
 // Initialize Firebase
 
 // Firebase 앱 초기화
-export const app = initializeApp(firebaseClientConfig);
+export const app = initializeApp(firebaseClientConfig,'clientApp');
 export const auth = getAuth(app);
 export const firestore = getFirestore(app);
 export const storage = getStorage(app);
