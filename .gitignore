@@ -36,3 +36,4 @@ yarn-error.log*
 next-env.d.ts
 /.idea/
 app.build.css
+/src/firebase/my-sns-healthtar-firebase-adminsdk-rzzkd-dbd3258b98.json

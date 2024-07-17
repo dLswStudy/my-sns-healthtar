@@ -2,7 +2,7 @@ import type {Metadata} from "next";
 import "../assets/style/app.scss";
 import "../assets/style/tailwind/index.css";
 import {Auth} from "@/app/_component/Auth";
-import Providers from "@/app/_component/Provider";
+import RQProviders from "@/app/_component/RQProvider";
 
 export const metadata: Metadata = {
     title: "Healthtar★",
@@ -16,15 +16,16 @@ export default function RootLayout(props: {
     return (
         <html>
         <body>
-        <Providers>
+        <RQProviders>
             <Auth>
                 <>
                     {props.children}
                     {props.modal}
                 </>
             </Auth>
-        </Providers>
-        <div id="portal"/>
+            <div id="portal"/>
+            <div id="antd-modal-root"/>
+        </RQProviders>
         </body>
         </html>
     );

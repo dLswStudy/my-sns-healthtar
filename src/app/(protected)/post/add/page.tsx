@@ -28,7 +28,7 @@ export default function PostAdd() {
         onSuccess: async (res) => {
             console.log("addPost res = ", res);
             if(res.ok){
-                await queryClient.invalidateQueries({ queryKey: ['posts'] })
+                await queryClient.invalidateQueries({ queryKey: ['posts','myPosts'] })
                 alert('게시물 생성 완료')
                 router.replace(PROTECTED.MAIN);
             }else{
@@ -36,8 +36,9 @@ export default function PostAdd() {
             }
         },
         onError: (error) => {
+            console.log("error = ", error);
             // 에러 처리
-            alert(`게시물 생성 실패: ${error}`);
+            alert(`게시물 생성 실패`);
         },
     })
 
@@ -86,12 +87,14 @@ export default function PostAdd() {
             state.addPostData.user_seq = firestoreUser.seq
         })
         const updateData = {}
-        for (const el of firestoreUser['item_unit_arr']) {
-            updateData[el.id] = false
+        if(firestoreUser?.['item_unit_arr']?.length){
+            for (const el of firestoreUser['item_unit_arr']) {
+                updateData[el.id] = false
+            }
+            immerSetField(state => {
+                state.addPostData.checked_items = updateData
+            })
         }
-        immerSetField(state => {
-            state.addPostData.checked_items = updateData
-        })
     }
 
     const handleAddBtn = async () => {
@@ -106,7 +109,7 @@ export default function PostAdd() {
             <div className="flex justify-center p-2">
                 <div className="w-[300px] xs:w-[470px] flex flex-col items-center">
                     <div className="post-add__text text-2xl mb-4">
-                        오늘의 게시물 추가
+                        오늘의 게시물 생성
                     </div>
                     <div className="post-add__text mt-5">
                         1. 내용
@@ -133,9 +136,8 @@ export default function PostAdd() {
                                     <Image
                                         src={addPostData.main_photo_url}
                                         fill
-                                        objectFit={'contain'}
                                         alt="게시할 이미지"
-                                        style={{display: 'block', maxWidth: '100%'}}
+                                        style={{objectFit: 'contain',display: 'block', maxWidth: '100%'}}
                                     />
                                 )
                                 : (
@@ -149,6 +151,12 @@ export default function PostAdd() {
                     </div>
                     <div className="space-y-2">
                         {
+                            !(firestoreUser?.['item_unit_arr'])
+                            && <p>진척도를 체크할 항목이 없습니다. 다음 안내 사항을 따라서 진척도 항목을 추가해주세요.<br/>
+                                ※사용자 정보 → 프로필 편집 → 항목 추가 → 프로필 저장
+                            </p>
+                        }
+                        {
                             firestoreUser?.['item_unit_arr']?.map((item: itemAndUnit, index) => (
                                 <div className={'flex space-x-2 items-center'} key={'' + item.id}>
                                     <Checkbox id={'' + item.id}
@@ -161,7 +169,7 @@ export default function PostAdd() {
                             ))
                         }
                     </div>
-                    <Button className={'mt-8 bg-sky-700 w-full'} onClick={handleAddBtn}>추가</Button>
+                    <Button className={'mt-8 bg-sky-700 w-full'} onClick={handleAddBtn}>게시물 생성</Button>
                 </div>
             </div>
             <div className="m-menubarH"></div>

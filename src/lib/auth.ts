@@ -22,9 +22,9 @@ import {signupSchemaV2} from "@/app/(public)/signUp/_component/signupForm";
 import {updateDoc} from "firebase/firestore";
 import moment from "moment/moment";
 import {generateTemporaryPassword} from "@/lib/utils";
-import {userProfilePageSchema} from "@/lib/schemas";
+import {SetFirestoreUser, userProfilePageSchema} from "@/lib/schemas";
 
-export async function signUp(data: signupSchemaV2, setFirestoreUser) {
+export async function signUp(data: signupSchemaV2, setFirestoreUser: SetFirestoreUser) {
     try {
         await setPersistence(auth, data.rememberMe ? browserLocalPersistence : browserSessionPersistence)
         const seqDocRef = doc(firestore, "SEQ",'USERS');
@@ -32,6 +32,7 @@ export async function signUp(data: signupSchemaV2, setFirestoreUser) {
         const userSeq = docSnap.data()?.user_seq;
         await updateDoc(seqDocRef, {user_seq: userSeq + 1});
         const newData = {
+            email: data.email,
             seq: userSeq,
             helloword:data.helloword,
             birth: data.birth,
@@ -43,6 +44,7 @@ export async function signUp(data: signupSchemaV2, setFirestoreUser) {
             profile_image_url:data.profileImageUrl,
             createdAt: moment().format('YYYYDDMMHHmmSS'),
             updatedAt: moment().format('YYYYDDMMHHmmSS'),
+
         };
         setFirestoreUser(newData)
         const userDocRef = doc(firestore,"USERS",data.email);

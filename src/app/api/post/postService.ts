@@ -4,6 +4,7 @@ import moment from "moment";
 import {getDocs,where, collection, query, doc, getDoc, limit, orderBy, setDoc, startAfter, updateDoc} from "firebase/firestore";
 import {uploadImage} from "@/lib/utils";
 import {postImgMiddlePath} from "@/stores/store.config";
+import {deleteDoc} from "@firebase/firestore";
 
 async function getLastSeq(collectionName, seqName) {
     const seqDocRef = doc(firestore, "SEQ", collectionName);
@@ -16,14 +17,14 @@ async function getLastSeq(collectionName, seqName) {
 export async function addPost(postToAdd:PostAddSchema, imageFile:File){
     const data = {
         ...postToAdd,
-        createdAt: moment().format('YYYYMMDDHHmmSS'),
-        updatedAt: moment().format('YYYYMMDDHHmmSS'),
+        createdAt: moment().format('YYYYMMDDHHmmss'),
+        updatedAt: moment().format('YYYYMMDDHHmmss'),
     }
     let mainPhotoUrl;
 
     try {
         if(postToAdd.main_photo_url){
-            mainPhotoUrl = await uploadImage(imageFile, postImgMiddlePath, postToAdd.user_seq+moment().format('YYYYMMDDHHmmSS'))
+            mainPhotoUrl = await uploadImage(imageFile, postImgMiddlePath, postToAdd.user_seq+moment().format('YYYYMMDDHHmmss'))
             data.main_photo_url = mainPhotoUrl
         }
         const post_seq = await getLastSeq('POSTS','post_seq');
@@ -112,4 +113,16 @@ export async function getMyPosts(user_seq:number, lastVisiblePost = null, pageSi
     const lastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
 
     return { posts, lastVisible };
+}
+
+export async function removePost(postId:string) {
+    const postRef = doc(firestore, 'POSTS', postId);
+    try {
+        await deleteDoc(postRef);
+        return {ok:true, message: `Document deleted with ID: ${postId}`}
+    } catch (error) {
+        console.log(`ErrorName: ${error.name}`);
+        console.log(`ErrorMessage: ${error.message}`);
+        return {error};
+    }
 }

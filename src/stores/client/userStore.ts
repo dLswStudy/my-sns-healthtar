@@ -53,7 +53,7 @@ interface UserStoreState {
     };
     setApiErrorMsg: (msg: string, type: 'signIn' | 'signUp') => void;
     clearAuthUser: () => void;
-    setFirestoreUser: (user: any) => void;
+    setFirestoreUser: (user: UserSchema) => void;
     setSignUpUser: (user: any) => void;
     setAuthUser: (user: any) => void;
     emailVerified: boolean;

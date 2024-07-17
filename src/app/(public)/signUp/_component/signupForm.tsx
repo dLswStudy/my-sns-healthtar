@@ -81,7 +81,7 @@ export default function SignupForm() {
     })
 
     async function onSubmit(data: signupSchema) {
-        const profileImageUrl = await uploadImage(data.profileImage as File, profileImgMiddlePath, data.nickName+moment().format('YYYYMMDDHHmmSS'));
+        const profileImageUrl = await uploadImage(data.profileImage as File, profileImgMiddlePath, data.nickName+moment().format('YYYYMMDDHHmmss'));
         const userData: signupSchemaV2 = {...data, profileImageUrl,posts:[]}
         let erMsg = ''
         setSignUpUser(userData)

@@ -1,5 +1,5 @@
 // Import the functions you need from the SDKs you need
-import {initializeApp, getApps, getApp} from "firebase/app";
+import {initializeApp, getApp, getApps} from "firebase/app";
 import {
     getAuth,
     sendSignInLinkToEmail,
@@ -24,11 +24,16 @@ const firebaseClientConfig = {
     appId: "1:863416519237:web:c60c1964308462f046f12c",
     measurementId: "G-ZZLGX486K8"
 };
-
 // Initialize Firebase
+let app;
+if (!getApps().length) {
+    app = initializeApp(firebaseClientConfig, 'clientApp');
+} else {
+    app = getApp();
+}
 
 // Firebase 앱 초기화
-export const app = initializeApp(firebaseClientConfig,'clientApp');
+// export const app = initializeApp(firebaseClientConfig,'clientApp');
 export const auth = getAuth(app);
 export const firestore = getFirestore(app);
 export const storage = getStorage(app);

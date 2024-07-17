@@ -3,26 +3,32 @@ import Image from "next/image";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
+import styled from 'styled-components';
+import moment from "moment";
+
 
 type PostVerticalProps = {
     post: any
     visibleUserInfo?: boolean
 }
+let line = 7
+const maxHeight = `${1.5*(line+1)}em`
+let StDiv = styled.div`
+        -webkit-line-clamp: ${line};
+    `;
+
 export default function PostHorizontal({ post, visibleUserInfo=false}:PostVerticalProps) {
-    const containerRef = useRef(null);
+    console.log("PostHorizontal post = ", post);
+    const textContainerRef = useRef(null);
     const [height, setHeight] = useState(0);
     const router = useRouter()
 
-    useEffect(() => {
-        if (containerRef.current) {
-            const containerWidth = containerRef.current.offsetWidth;
-            setHeight(containerWidth / 5);
-        }
 
+    useEffect(() => {
         const handleResize = () => {
-            if (containerRef.current) {
-                const containerWidth = containerRef.current.offsetWidth;
-                setHeight(containerWidth / 5);
+            if (textContainerRef.current) {
+                const effectiveHeight = textContainerRef.current.offsetHeight;
+                console.log("effectiveHeight = ", effectiveHeight);
             }
         };
 
@@ -45,25 +51,33 @@ export default function PostHorizontal({ post, visibleUserInfo=false}:PostVertic
                         <div className="ml-2">{post.nickname}</div>
                     </div>
                 }
-                <div ref={containerRef} className="flex w-full">
-                    <div
-                        className="contentArea border-gray-500 flex items-center justify-center"
-                        style={{width: '80%', height: `${height}px`}}
+                <div className="post-h__time text-sm text-gray-500">{moment(post.createdAt, 'YYYYMMDDHHmmss').format('YYYY년 MM월 DD일 HH:mm:SS')}</div>
+                <div className="flex w-full" style={{maxHeight:`${maxHeight}`}}>
+                    <StDiv
+                        ref={textContainerRef}
+                        className="contentArea border-gray-500"
+                        style={{width: '60%'}}
                     >
-                        {post.content}
-                    </div>
-                    <div
-                        className="imageContainer relative"
-                        style={{width: '20%', height: `${height}px`}}
-                    >
-                        <Image
-                            src={post.main_photo_url}
-                            alt="Image"
-                            layout="fill"
-                            objectFit="contain"
-                            className="image"
-                        />
-                    </div>
+                        <div className="inner-wrapper">
+                            {post.content}
+                        </div>
+                    </StDiv>
+                    {
+                        post.main_photo_url &&
+                        <div
+                            className="imageContainer"
+                            style={{width: '40%'}}
+                        >
+                            <Image
+                                src={post.main_photo_url}
+                                alt="Image"
+                                style={{objectFit: 'contain', maxHeight:`${maxHeight}`, width:'100%', height:'auto'}}
+                                width={100}
+                                height={6000}
+                                className="image"
+                            />
+                        </div>
+                    }
                 </div>
             </Card>
         </div>

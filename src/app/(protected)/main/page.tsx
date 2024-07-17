@@ -22,6 +22,8 @@ export default function Main() {
             queryFn: fetchPosts,
             getNextPageParam: (lastPage) => lastPage.nextPage || undefined,
             initialPageParam:null,
+            staleTime:0,
+            gcTime:0,
     })
     console.log("data = ", data);
 
@@ -31,13 +33,13 @@ export default function Main() {
     return (
         <div id={'main'}>
             <div className="flex justify-center">
-                <div className="flex flex-col w-full">
+                <div className="flex flex-col">
                     {
                         data?.pages?.map((page, i) => (
                             <div key={i}>
                                 {page.posts.map((post, j) => (
                                     <div key={post.id} >
-                                        <Link href={`/post/${post.id}`} passHref>
+                                        <Link href={`/post/detail/${post.id}`} passHref>
                                             <PostVertical post={post} />
                                         </Link>
                                     </div>

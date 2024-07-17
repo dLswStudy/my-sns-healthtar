@@ -5,7 +5,14 @@
         max-width: 480px;
         margin-bottom: 4px;
     }
-
+    .contentArea{
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        line-height: 1.5em;
+    }
     .imageContainer {
         position: relative;
         width: 100%;
@@ -19,7 +26,6 @@
         left: 0;
         width: 100%;
         height: 100%;
-        object-fit: contain;
     }
     .hr {
         width: 100%;

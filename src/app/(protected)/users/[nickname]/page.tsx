@@ -24,6 +24,7 @@ import {handleImagePreview} from "@/lib/utils";
 import {getMyPosts} from "@/app/api/post/postService";
 import PostVertical from "@/app/(protected)/post/_components/postVertical";
 import PostHorizontal from "@/app/(protected)/post/_components/postHorizontal";
+import Link from "next/link";
 
 
 type Props = {
@@ -48,7 +49,9 @@ export default function User({params}: Props) {
 
     const {data: userProfilePageRQ, status, error, isFetching} = useQuery({
         queryKey: ['userProfile', decodedNickname],
-        queryFn: async (): Promise<userProfilePageSchema> => getUserByNickname(decodedNickname)
+        queryFn: async (): Promise<userProfilePageSchema> => getUserByNickname(decodedNickname),
+        gcTime:0,
+        staleTime:0
     });
 
     const {
@@ -62,6 +65,8 @@ export default function User({params}: Props) {
         queryFn: fetchMyPosts,
         getNextPageParam: (lastPage) => lastPage.nextPage || undefined,
         initialPageParam: null,
+        gcTime:0,
+        staleTime:0
     });
 
     const {mutate:profilePutMutate, status:putStatus, error:putError} = useMutation({
@@ -82,6 +87,7 @@ export default function User({params}: Props) {
     })
 
     useEffect(() => {
+        console.log("%cuserProfilePage Mount","color:green")
         if (userProfilePageRQ) {
             console.log("userProfilePageRQ = ", userProfilePageRQ);
             setField('userProfilePage', userProfilePageRQ);
@@ -234,7 +240,9 @@ export default function User({params}: Props) {
                             <div key={i}>
                                 {page.posts.map((post, j) => (
                                     <div key={j}>
-                                        <PostHorizontal post={post} />
+                                        <Link href={`/post/detail/${post.id}`} passHref>
+                                            <PostHorizontal post={post} />
+                                        </Link>
                                     </div>
                                 ))}
                             </div>

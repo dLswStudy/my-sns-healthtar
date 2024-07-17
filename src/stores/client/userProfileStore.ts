@@ -36,7 +36,7 @@ const createSetters = (set) => ({
 interface UserProfileStoreState {
     userProfilePage: userProfilePageSchema;
     images:UserProfileImagesSchema;
-    myPosts:Array<any>
+    myPosts:Array<any>;
 
     setField: (field: string, value: any) => void;
     setNestedField: (field: string, nestedField: string, value: any) => void;

@@ -10,22 +10,22 @@ export async function setProfile(profile:userProfilePageSchema,images:UserProfil
     console.log("images = ", images);
     const {posts,followers, followings,createdAt,...toApply} = profile
     const uploadData = JSON.parse(JSON.stringify(toApply))
-    uploadData.updatedAt = moment().format('YYYYMMDDHHmmSS')
+    uploadData.updatedAt = moment().format('YYYYMMDDHHmmss')
     const docRef = doc(firestore, 'USERS', toApply.email);
     try {
         let profileImgUrl
         let presentImgUrl
         let goalImgUrl
         if(images.profile_img_file){
-            profileImgUrl = await uploadImage(images.profile_img_file, profileImgMiddlePath, profile.nickname+moment().format('YYYYMMDDHHmmSS'))
+            profileImgUrl = await uploadImage(images.profile_img_file, profileImgMiddlePath, profile.nickname+moment().format('YYYYMMDDHHmmss'))
             uploadData.profile_image_url = profileImgUrl
         }
         if(images.present_img_file){
-            presentImgUrl = await uploadImage(images.present_img_file, presentImgMiddlePath, profile.nickname+moment().format('YYYYMMDDHHmmSS'))
+            presentImgUrl = await uploadImage(images.present_img_file, presentImgMiddlePath, profile.nickname+moment().format('YYYYMMDDHHmmss'))
             uploadData.present.img = presentImgUrl
         }
         if(images.goal_img_file){
-            goalImgUrl = await uploadImage(images.goal_img_file, goalImgMiddlePath, profile.nickname+moment().format('YYYYMMDDHHmmSS'))
+            goalImgUrl = await uploadImage(images.goal_img_file, goalImgMiddlePath, profile.nickname+moment().format('YYYYMMDDHHmmss'))
             uploadData.goal.img = goalImgUrl
         }
         await setDoc(docRef, uploadData, { merge: true }); // merge 옵션을 사용하여 기존 필드는 유지

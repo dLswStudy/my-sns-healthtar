@@ -19,7 +19,22 @@ export async function GET(
         }
 
         const postData = doc.data();
-        return Response.json(postData, {status: 200});
+
+        const userQuery = db.collection('USERS').where('seq', '==', postData.user_seq);
+        const querySnapshot = await userQuery.get();
+
+        if (querySnapshot.empty) {
+            return new Response(JSON.stringify({ error: 'User not found' }), {
+                status: 404,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+        const userDoc = querySnapshot.docs[0];
+        const userData = userDoc.data();
+        const result = { ...postData, profile_image_url: userData.profile_image_url, nickname: userData.nickname };
+        return Response.json(result, {status: 200});
     } catch (error){
         console.log(`ErrorName: ${error.name}`);
         console.log(`ErrorMessage: ${error.message}`);
