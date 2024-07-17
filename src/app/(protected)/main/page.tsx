@@ -1,7 +1,7 @@
 "use client"
 
 import {useInfiniteQuery} from "@tanstack/react-query";
-import {getPosts} from "@/app/api/post/postService";
+import {getPosts} from "@/app/client-api/post/postService";
 import {Spinner} from "@/components/ui/spinner";
 import PostVertical from "@/app/(protected)/post/_components/postVertical";
 import Link from "next/link";

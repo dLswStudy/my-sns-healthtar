@@ -9,7 +9,7 @@ import {useState} from "react";
 import {cn} from "@/lib/utils";
 import {useRouter} from "next/navigation";
 import {useMutation, useQueryClient} from "@tanstack/react-query";
-import {removePost} from "@/app/api/post/postService";
+import {removePost} from "@/app/client-api/post/postService";
 import {queryClient} from "@/app/_component/RQProvider";
 
 const Button = styled.button`
@@ -21,7 +21,7 @@ const Button = styled.button`
     color: #333;
   }
 `;
-export default function DotsMenuBtn({user_seq, postId}:{user_seq:number, postId:string}) {
+export default function DotsMenuBtn({user_seq, postId, imgUrl}:{user_seq:number, postId:string, imgUrl:string}) {
     const {firestoreUser} = useUserStore()
     const isMe =  user_seq == firestoreUser.seq;
     const [menubarOpen, setMenubarOpen] = useState(false);
@@ -29,8 +29,9 @@ export default function DotsMenuBtn({user_seq, postId}:{user_seq:number, postId:
 
 
     const {mutate: removePostRQ} = useMutation({
-        mutationFn:()=>removePost(postId),
+        mutationFn:()=>removePost(postId, imgUrl),
         onSuccess: async (res) => {
+            console.log("removePost res = ", res);
             if(res.ok){
                 await queryClient.invalidateQueries({ queryKey: ['posts','myPosts'] })
                 alert('삭제되었습니다.')

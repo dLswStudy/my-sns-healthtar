@@ -5,6 +5,7 @@ import {getDocs,where, collection, query, doc, getDoc, limit, orderBy, setDoc, s
 import {uploadImage} from "@/lib/utils";
 import {postImgMiddlePath} from "@/stores/store.config";
 import {deleteDoc} from "@firebase/firestore";
+import {deleteBucketImage} from "@/app/client-api/utils/deleteBucketImage";
 
 async function getLastSeq(collectionName, seqName) {
     const seqDocRef = doc(firestore, "SEQ", collectionName);
@@ -37,6 +38,31 @@ export async function addPost(postToAdd:PostAddSchema, imageFile:File){
         return {error};
     }
 }
+
+export async function putPost(postToAdd:PostAddSchema, imageFile:File){
+    const data = {
+        ...postToAdd,
+        createdAt: moment().format('YYYYMMDDHHmmss'),
+        updatedAt: moment().format('YYYYMMDDHHmmss'),
+    }
+    let mainPhotoUrl;
+
+    try {
+        if(postToAdd.main_photo_url){
+            mainPhotoUrl = await uploadImage(imageFile, postImgMiddlePath, postToAdd.user_seq+moment().format('YYYYMMDDHHmmss'))
+            data.main_photo_url = mainPhotoUrl
+        }
+        const post_seq = await getLastSeq('POSTS','post_seq');
+        const docRef = doc(firestore, 'POSTS', ''+post_seq);
+        await setDoc(docRef, data);
+        return {ok:true, message: `Document added with user_seq: ${data.user_seq}`}
+    } catch (error) {
+        console.log(`ErrorName: ${error.name}`);
+        console.log(`ErrorMessage: ${error.message}`);
+        return {error};
+    }
+}
+
 
 export async function getPosts(lastVisiblePost = null, pageSize = 10) {
     let q = query(
@@ -115,9 +141,11 @@ export async function getMyPosts(user_seq:number, lastVisiblePost = null, pageSi
     return { posts, lastVisible };
 }
 
-export async function removePost(postId:string) {
+export async function removePost(postId:string, imgUrl:string) {
+    console.log("removePost imgUrl = ", imgUrl);
     const postRef = doc(firestore, 'POSTS', postId);
     try {
+        await deleteBucketImage(imgUrl)
         await deleteDoc(postRef);
         return {ok:true, message: `Document deleted with ID: ${postId}`}
     } catch (error) {

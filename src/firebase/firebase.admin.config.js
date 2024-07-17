@@ -8,7 +8,7 @@ let app;
 if (!getApps().length) {
     initializeApp({
         credential: cert(serviceAccount),
-        storageBucket: "gs://my-sns-healthtar.appspot.com"
+        storageBucket: "my-sns-healthtar.appspot.com"
     });
 } else {
     app = getApp();

@@ -15,10 +15,9 @@ import {addPost} from "@/app/client-api/post/postService";
 import {PROTECTED} from "@/lib/routes";
 import {useRouter} from "next/navigation";
 
-export default function PostAdd() {
+export default function PostPut() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const {immerSetField, addPostData, tempData, resetStore} = usePostStore()
-    const isXs = useMediaQuery({query: '(max-width: 480px)'});
     const {firestoreUser} = userStore()
     const queryClient = useQueryClient();
     const router = useRouter()
@@ -109,7 +108,7 @@ export default function PostAdd() {
             <div className="flex justify-center p-2">
                 <div className="w-[300px] xs:w-[470px] flex flex-col items-center">
                     <div className="post-add__text text-2xl mb-4">
-                        오늘의 게시물 생성
+                        게시물 수정
                     </div>
                     <div className="post-add__text mt-5">
                         1. 내용

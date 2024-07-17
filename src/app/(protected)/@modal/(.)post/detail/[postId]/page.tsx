@@ -23,7 +23,7 @@ export default async function PostDetail({params}:Props){
                 <div className="ml-2">{data['nickname']}</div>
             </div>
             <div className="relative">
-                <DotsMenuBtn user_seq={data['user_seq']} postId={params.postId}/>
+                <DotsMenuBtn user_seq={data['user_seq']} postId={params.postId} imgUrl={data.main_photo_url}/>
             </div>
         </div>
     )
