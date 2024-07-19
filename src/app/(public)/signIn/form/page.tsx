@@ -42,6 +42,8 @@ export default function SignInForm() {
 
     useEffect(()=>{
         setSignUpUser(null)
+        setApiErrorMsg('','signIn')
+        setApiErrorMsg('','signUp')
     },[])
     const handleClick = (event: any) => {
         setApiErrorMsg('', 'signIn')
