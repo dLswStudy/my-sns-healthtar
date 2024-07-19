@@ -16,11 +16,13 @@ export default function SentEmail() {
                     const errhandle = await errorHandle(res)
                     if (errhandle.isError) {
                         setErrMsg(errhandle.message)
+                        setSignUpUser(null)
                         return
                     }
-
+                    setSignUpUser(null)
                     console.log('sign up success')
                 }).catch(err => {
+                setSignUpUser(null)
                 setErrMsg('에러가 발생하였습니다. 잠시 후 다시 시도해주세요.')
             })
             if(errMsg) alert(errMsg)

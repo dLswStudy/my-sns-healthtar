@@ -28,7 +28,7 @@ const formSchema = z.object({
         .refine(file => file instanceof File, "프로필 이미지를 선택해주세요.")
         .refine(file => ACCEPTED_IMAGE_TYPES.includes(file?.type), "jpg/jpeg, png 파일만 업로드 가능합니다.")
         .refine(file => file?.size <= MAX_FILE_SIZE, "파일 크기는 최대 2MB입니다."),
-    nickName: z.string().regex(/^(?!.*[._-]{2})[가-힣a-zA-Z]{1}[가-힣a-zA-Z0-9._-]{0,28}[가-힣a-zA-Z0-9]{1}$/).refine(exportNickname,'yes'),
+    nickName: z.string().regex(/^(?!.*[._-]{2})[가-힣a-zA-Z]{1}[가-힣a-zA-Z0-9._-]{0,28}[가-힣a-zA-Z0-9]{1}$/).refine(exportNickname, 'yes'),
     helloword: z.string().max(50, '최대 50자까지 입력 할 수 있습니다.'),
     name: z.string().regex(/^[가-힣a-zA-Z]{2,50}$/),
     password: z.string().refine(validatePassword, {
@@ -59,7 +59,7 @@ export default function SignupForm() {
 
     useEffect(() => {
         setSignUpUser(null)
-        setApiErrorMsg('','signUp')
+        setApiErrorMsg('', 'signUp')
     }, []);
 
     const handleClick = (e: any) => {
@@ -81,24 +81,26 @@ export default function SignupForm() {
     })
 
     async function onSubmit(data: signupSchema) {
-        const profileImageUrl = await uploadImage(data.profileImage as File, profileImgMiddlePath, data.nickName+moment().format('YYYYMMDDHHmmss'));
-        const userData: signupSchemaV2 = {...data, profileImageUrl,posts:[]}
+        const profileImageUrl = await uploadImage(data.profileImage as File, profileImgMiddlePath, data.nickName + moment().format('YYYYMMDDHHmmss'));
+        const userData: signupSchemaV2 = {...data, profileImageUrl, posts: []}
         let erMsg = ''
         setSignUpUser(userData)
         await authSendSignInLinkToEmail(data.email)
             .then(async res => {
-            const errhandle = await errorHandle(res)
-            if (errhandle.isError) {
-                erMsg = errhandle.message
-                return
-            }
+                const errhandle = await errorHandle(res)
+                if (errhandle.isError) {
+                    erMsg = errhandle.message
+                    setSignUpUser(null)
+                    return
+                }
 
-            setEmailBeforeAuth(data.email)
-            console.log('send email success')
-            router.push('/signUp/sentEmail');
-        }).catch(err => {
-            erMsg = '에러가 발생하였습니다. 잠시 후 다시 시도해주세요.'
-        })
+                setEmailBeforeAuth(data.email)
+                console.log('send email success')
+                router.push('/signUp/sentEmail');
+            }).catch(err => {
+                erMsg = '에러가 발생하였습니다. 잠시 후 다시 시도해주세요.'
+                setSignUpUser(null)
+            })
         setApiErrorMsg(erMsg, 'signUp')
     }
 
@@ -113,14 +115,14 @@ export default function SignupForm() {
                     name="email"
                     render={({field}) => (
                         <FormItem>
-                                <FormControl>
-                                    <Input
-                                        placeholder="이메일"
-                                        className="tw-input tw-w-full"
-                                        onClick={handleClick}
-                                        {...field}
-                                    />
-                                </FormControl>
+                            <FormControl>
+                                <Input
+                                    placeholder="이메일"
+                                    className="tw-input tw-w-full"
+                                    onClick={handleClick}
+                                    {...field}
+                                />
+                            </FormControl>
                             <FormMessage></FormMessage>
                         </FormItem>
                     )}
@@ -138,7 +140,7 @@ export default function SignupForm() {
                                             name="rememberMe"
                                             type={'checkbox'}
                                             checked={field.value}
-                                            onChange={(val) =>field.onChange(val)}/>
+                                            onChange={(val) => field.onChange(val)}/>
                                         <label
                                             htmlFor="rememberMe"
                                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -150,11 +152,13 @@ export default function SignupForm() {
                             </FormItem>
                         )
                     }/>
+
                 <FormField
                     control={form.control}
                     name="profileImage"
                     render={({field}) => (
                         <FormItem>
+                            <FormLabel className={'text-sm text-gray-500 ml-2'}>프로필 이미지 선택</FormLabel>
                             <FormControl>
                                 <Input
                                     type="file"
