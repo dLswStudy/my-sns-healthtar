@@ -1,34 +1,55 @@
 "use client"
 import {useEffect, useRef} from "react";
-import {handleAddPostPreview} from "@/lib/utils";
+import {countValueInObject, handleAddPostPreview} from "@/lib/utils";
 import {Card} from "@/components/ui/card";
 import usePostStore from "@/stores/client/postStore";
 import {useMediaQuery} from "react-responsive";
 import Image from "next/image";
-import {useMutation, useQueryClient} from "@tanstack/react-query";
-import {itemAndUnit, PostAddSchema} from "@/lib/schemas";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {itemAndUnit, PostAddSchema, PostPutSchema, userProfilePageSchema} from "@/lib/schemas";
 import {Checkbox} from "@/components/ui/checkbox";
 import {Progress} from "@/components/ui/progress";
 import userStore from "@/stores/client/userStore";
 import {Button} from "@/components/ui/button";
-import {addPost} from "@/app/client-api/post/postService";
+import {addPost, getPostOne, putPost} from "@/app/client-api/post/postService";
 import {PROTECTED} from "@/lib/routes";
 import {useRouter} from "next/navigation";
-
-export default function PostPut() {
+import {getUserByNickname} from "@/lib/auth";
+import {put} from "@jridgewell/set-array";
+type Props = {
+    params: {
+        postId: string
+    }
+}
+export default function PostUpdate({params}:Props) {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const {immerSetField, addPostData, tempData, resetStore} = usePostStore()
+    const {immerSetField, putPostData, tempData, resetStore} = usePostStore()
     const {firestoreUser} = userStore()
     const queryClient = useQueryClient();
     const router = useRouter()
 
-    const {mutateAsync:postAddMutate, status:addStatus, error:addError} = useMutation({
-        mutationFn: async (postToAdd:PostAddSchema) => addPost(postToAdd, tempData.imageFiles.mainPhoto),
+    const {data: putPostDataRQ, status, error, isSuccess} = useQuery({
+        queryKey: ['postOne', params.postId],
+        queryFn: async () => {
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_APP_DOMAIN}/api/post/getPutPost/${params.postId}`,{cache:'no-store'}
+            )
+            return await response.json()
+        },
+        staleTime:0,
+        gcTime:0
+    });
+    console.log("putPostDataRQ = ", putPostDataRQ);
+    console.log("isSuccess = ", isSuccess);
+    console.log("status = ", status);
+    
+    const {mutateAsync:postPutMutate, status:addStatus, error:addError} = useMutation({
+        mutationFn: async (postToPut:PostPutSchema) => putPost(postToPut, tempData.imageFiles.mainPhoto),
         onSuccess: async (res) => {
             console.log("addPost res = ", res);
             if(res.ok){
                 await queryClient.invalidateQueries({ queryKey: ['posts','myPosts'] })
-                alert('게시물 생성 완료')
+                alert('게시물 수정 완료')
                 router.replace(PROTECTED.MAIN);
             }else{
                 throw new Error(res?.message)
@@ -37,17 +58,21 @@ export default function PostPut() {
         onError: (error) => {
             console.log("error = ", error);
             // 에러 처리
-            alert(`게시물 생성 실패`);
+            alert(`게시물 수정 실패`);
         },
     })
 
     useEffect(() => {
-        arrangeCheckedItems()
+        console.log('%cMOUNTED update post page','color:green');
+
+        if(putPostDataRQ)
+            arrangePutPostData()
 
         return () => {
+            console.log('%cUNMOUNT update post page','color:red');
             resetStore()
         }
-    }, []);
+    }, [isSuccess]);
     const setPostImgFile = (file) => {
         immerSetField(state => {
             state.tempData.imageFiles.mainPhoto = file
@@ -56,19 +81,19 @@ export default function PostPut() {
     const setPostImgUrl = (url) => {
         immerSetField(state => {
             //임시 미리보기용
-            state.addPostData.main_photo_url = url
+            state.tempData.previewImgUrlToUpload = url
         })
     }
 
     const handleInputChange = (e) => {
         immerSetField(state => {
-            state.addPostData.content = e.target.value
+            state.putPostData.content = e.target.value
         })
     }
 
     const handleChecked = (id, checked) => {
         immerSetField(state => {
-            state.addPostData.checked_items[id] = checked
+            state.putPostData.checked_ids[id] = checked
         })
     }
 
@@ -81,27 +106,33 @@ export default function PostPut() {
         return value / max * 100
     }
 
-    const arrangeCheckedItems = () => {
-        immerSetField(state => {
-            state.addPostData.user_seq = firestoreUser.seq
+    let chkCnt = 0
+    const arrangePutPostData = () => {
+        immerSetField( (state) => {
+            state.putPostData = putPostDataRQ
+            state.tempData.previewImgUrlToUpload = putPostDataRQ.main_photo_url
         })
-        const updateData = {}
-        if(firestoreUser?.['item_unit_arr']?.length){
-            for (const el of firestoreUser['item_unit_arr']) {
-                updateData[el.id] = false
-            }
-            immerSetField(state => {
-                state.addPostData.checked_items = updateData
-            })
-        }
+        // const cheked = {}
+        // if(firestoreUser?.['item_unit_arr']?.length){
+        //     for (const el of firestoreUser['item_unit_arr']) {
+        //         cheked[el.id] = false
+        //     }
+        //     console.log("cheked = ", cheked);
+        //     immerSetField(state => {
+        //         state.putPostData.checked_ids = cheked
+        //     })
+        // }
+        chkCnt = countValueInObject(putPostData.checked_ids, true)
+        // for (const bool of p)
     }
 
     const handleAddBtn = async () => {
-        if(!addPostData.content){
+        if(!putPostData.content){
             alert('내용을 입력해주세요.')
         }
-        await postAddMutate(addPostData)
+        await postPutMutate(putPostData)
     }
+
     return (
         <div id={'Post-add'}>
             <canvas ref={canvasRef} style={{display: 'none'}}></canvas>
@@ -113,7 +144,7 @@ export default function PostPut() {
                     <div className="post-add__text mt-5">
                         1. 내용
                     </div>
-                    <textarea className="w-[300px] xs:w-[470px] h-[200px] border p-2" defaultValue={addPostData.content}
+                    <textarea className="w-[300px] xs:w-[470px] h-[200px] border p-2" defaultValue={putPostData.content}
                               onChange={(e) => handleInputChange(e)}
                     ></textarea>
                     <div className="post-add__text mt-5">
@@ -130,10 +161,10 @@ export default function PostPut() {
                                 }}
                                 className="absolute inset-0 opacity-0 cursor-pointer z-20"
                             />
-                            {addPostData.main_photo_url ?
+                            {putPostData.main_photo_url ?
                                 (
                                     <Image
-                                        src={addPostData.main_photo_url}
+                                        src={tempData.previewImgUrlToUpload}
                                         fill
                                         alt="게시할 이미지"
                                         style={{objectFit: 'contain',display: 'block', maxWidth: '100%'}}
@@ -150,7 +181,7 @@ export default function PostPut() {
                     </div>
                     <div className="space-y-2">
                         {
-                            !(firestoreUser?.['item_unit_arr'])
+                            !chkCnt
                             && <p>진척도를 체크할 항목이 없습니다. 다음 안내 사항을 따라서 진척도 항목을 추가해주세요.<br/>
                                 ※사용자 정보 → 프로필 편집 → 항목 추가 → 프로필 저장
                             </p>
@@ -159,6 +190,7 @@ export default function PostPut() {
                             firestoreUser?.['item_unit_arr']?.map((item: itemAndUnit, index) => (
                                 <div className={'flex space-x-2 items-center'} key={'' + item.id}>
                                     <Checkbox id={'' + item.id}
+                                              checked={putPostData.checked_ids[''+item.id]}
                                               onCheckedChange={(checked) => handleChecked(item.id, checked)}/>
                                     <label htmlFor={'' + item.id} className={'flex items-center space-x-2'}>
                                         <Progress value={calcProgress(item.id)} className={'w-40 border'}/>
@@ -168,7 +200,7 @@ export default function PostPut() {
                             ))
                         }
                     </div>
-                    <Button className={'mt-8 bg-sky-700 w-full'} onClick={handleAddBtn}>게시물 생성</Button>
+                    <Button className={'mt-8 bg-sky-700 w-full'} onClick={handleAddBtn}>게시물 수정</Button>
                 </div>
             </div>
             <div className="m-menubarH"></div>

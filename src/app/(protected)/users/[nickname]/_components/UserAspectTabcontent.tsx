@@ -158,7 +158,7 @@ export default function UserAspectTabContent({imgUrl, content, aspect, isEditing
                                     항목:
                                     {
                                         userProfilePage?.[aspect]?.['value_arr']?.map((data, index) => (
-                                            <div key={index}>
+                                            <div key={data.id}>
                                                 <Card className="p-2 bg-slate-800 space-y-1">
                                                     <Input className="w-full" defaultValue={getItemUnit(data.id, 'item')}
                                                            onChange={(e) => handleInputChange(e, 'item', data.id)}/>

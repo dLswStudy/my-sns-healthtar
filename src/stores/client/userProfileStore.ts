@@ -1,10 +1,41 @@
-import {UserProfileImagesSchema, userProfilePageSchema} from "@/lib/schemas";
+import {itemAndUnit, UserProfileImagesSchema, userProfilePageSchema, valueAndId} from "@/lib/schemas";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import {produce} from "immer";
 
 const initialState = {
+    userProfilePage:{
+        seq: null,
+        email: '',
+        name: '',
+        nickname: '',
+        profile_image_url: '',
+        gender: '',
+        helloword: '',
+        birth: '',
+        createdAt: '',
+        updatedAt: '',
+
+        post: [],
+        followers: [],
+        followings: [],
+
+        present:{
+            img:'',
+            content:'',
+            value_arr:[],
+        },
+        goal:{
+            img:'',
+            content:'',
+            value_arr:[],
+        },
+        item_unit_arr:[],
+        ids:{
+            itemAndUnit:null,
+        }
+    },
     images:{
         profile_img_file:null,
         present_img_file:null,
@@ -34,25 +65,25 @@ const createSetters = (set) => ({
 });
 
 interface UserProfileStoreState {
-    userProfilePage: userProfilePageSchema;
-    images:UserProfileImagesSchema;
-    myPosts:Array<any>;
+    userProfilePage;
+    images;
+    myPosts;
 
     setField: (field: string, value: any) => void;
     setNestedField: (field: string, nestedField: string, value: any) => void;
     addItemUnit: (item: string, unit: string) => void;
     delItemUnit: (id: number) => void;
     immerSetField: (recipe: (draft: any) => void) => void;
+    resetStore: () => void;
 }
 
 const useUserProfileStore = create<UserProfileStoreState>()(
     devtools(
         immer(
             (set) => ({
-                userProfilePage: null, //프로필 업데이트 용
-                images:initialState.images, //임시저장
-                myPosts:initialState.myPosts,
-                ...createSetters(set)
+                ...initialState,
+                ...createSetters(set),
+                resetStore: () => set({ ...initialState })
             })
         )
     )

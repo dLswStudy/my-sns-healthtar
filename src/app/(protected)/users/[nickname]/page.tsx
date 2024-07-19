@@ -34,7 +34,7 @@ export default function User({params}: Props) {
     const {nickname} = params;
     const decodedNickname: string = decodeURIComponent(nickname);
     const {firestoreUser,setFirestoreUser} = userStore()
-    const {setField, userProfilePage,images,immerSetField, myPosts} = userProfileStore();
+    const {setField, userProfilePage,images,immerSetField, myPosts, resetStore} = userProfileStore();
     const [isEditing, setIsEditing] = useState(false);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const isMine = decodedNickname === firestoreUser?.nickname
@@ -50,8 +50,6 @@ export default function User({params}: Props) {
     const {data: userProfilePageRQ, status, error, isFetching} = useQuery({
         queryKey: ['userProfile', decodedNickname],
         queryFn: async (): Promise<userProfilePageSchema> => getUserByNickname(decodedNickname),
-        gcTime:0,
-        staleTime:0
     });
 
     const {
@@ -71,14 +69,18 @@ export default function User({params}: Props) {
 
     const {mutate:profilePutMutate, status:putStatus, error:putError} = useMutation({
         mutationFn: (userProfilePage: userProfilePageSchema) => setProfile(userProfilePage, images, setFirestoreUser),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['userProfile'] })
-            alert('프로필 업데이트 완료')
-            // 닉네임이 변경된 경우 경로 업데이트
-            if (userProfilePage.nickname !== decodedNickname) {
-                router.replace(`/users/${(userProfilePage.nickname)}`);
+        onSuccess: async (res) => {
+            if(res.ok){
+                queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+                alert('프로필 업데이트 완료')
+                // 닉네임이 변경된 경우 경로 업데이트
+                if (userProfilePage.nickname !== decodedNickname) {
+                    router.replace(`/users/${(userProfilePage.nickname)}`);
+                }
+                setIsEditing(false)
+            }else{
+                throw new Error(res.error)
             }
-            setIsEditing(false)
         },
         onError: (error) => {
             // 에러 처리
@@ -97,10 +99,8 @@ export default function User({params}: Props) {
         }
 
         return () => {
-            console.log("userProfilePage Unmount")
-            setField('userProfilePage', null);
-            setField('images', null);
-            setField('myPosts', null);
+            console.log("%cuserProfilePage Unmount","color:red")
+            resetStore()
         };
     }, [userProfilePageRQ, myPostsRQ]);
 
@@ -240,9 +240,7 @@ export default function User({params}: Props) {
                             <div key={i}>
                                 {page.posts.map((post, j) => (
                                     <div key={j}>
-                                        <Link href={`/post/detail/${post.id}`} passHref>
-                                            <PostHorizontal post={post} />
-                                        </Link>
+                                        <PostHorizontal post={post} />
                                     </div>
                                 ))}
                             </div>

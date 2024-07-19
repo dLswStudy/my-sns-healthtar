@@ -69,7 +69,7 @@ export default function PostAdd() {
 
     const handleChecked = (id, checked) => {
         immerSetField(state => {
-            state.addPostData.checked_items[id] = checked
+            state.addPostData.checked_ids[id] = checked
         })
     }
 
@@ -83,8 +83,9 @@ export default function PostAdd() {
     }
 
     const arrangeCheckedItems = () => {
+        const userSeq = firestoreUser.seq;
         immerSetField(state => {
-            state.addPostData.user_seq = firestoreUser.seq
+            state.addPostData.user_seq = userSeq
         })
         const updateData = {}
         if(firestoreUser?.['item_unit_arr']?.length){
@@ -92,7 +93,7 @@ export default function PostAdd() {
                 updateData[el.id] = false
             }
             immerSetField(state => {
-                state.addPostData.checked_items = updateData
+                state.addPostData.checked_ids = updateData
             })
         }
     }

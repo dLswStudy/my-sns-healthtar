@@ -1,16 +1,17 @@
 "use client"
 
-import {useInfiniteQuery} from "@tanstack/react-query";
+import PostHorizontal from "@/app/(protected)/post/_components/postHorizontal";
 import {getPosts} from "@/app/client-api/post/postService";
 import {Spinner} from "@/components/ui/spinner";
-import PostVertical from "@/app/(protected)/post/_components/postVertical";
+import {useInfiniteQuery} from "@tanstack/react-query";
 import Link from "next/link";
+import {useRouter} from "next/navigation";
+
 const fetchPosts = async ({pageParam = null}) => {
     const {posts, lastVisible} = await getPosts(pageParam);
     return {posts, nextPage: lastVisible};
 };
 export default function Main() {
-
     const {
         data,
         fetchNextPage,
@@ -18,12 +19,12 @@ export default function Main() {
         isFetchingNextPage,
         status
     } = useInfiniteQuery({
-            queryKey: ['posts'],
-            queryFn: fetchPosts,
-            getNextPageParam: (lastPage) => lastPage.nextPage || undefined,
-            initialPageParam:null,
-            staleTime:0,
-            gcTime:0,
+        queryKey: ['posts'],
+        queryFn: fetchPosts,
+        getNextPageParam: (lastPage) => lastPage.nextPage || undefined,
+        initialPageParam: null,
+        staleTime: 0,
+        gcTime: 0,
     })
     console.log("data = ", data);
 
@@ -38,10 +39,8 @@ export default function Main() {
                         data?.pages?.map((page, i) => (
                             <div key={i}>
                                 {page.posts.map((post, j) => (
-                                    <div key={post.id} >
-                                        <Link href={`/post/detail/${post.id}`} passHref>
-                                            <PostVertical post={post} />
-                                        </Link>
+                                    <div key={post.id}>
+                                        <PostHorizontal post={post} visibleUserInfo/>
                                     </div>
                                 ))}
                             </div>

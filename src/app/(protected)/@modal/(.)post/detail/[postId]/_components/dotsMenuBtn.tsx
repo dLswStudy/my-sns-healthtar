@@ -5,12 +5,12 @@ import {
     MenubarSeparator,
 } from "@/components/ui/menubar";
 import useUserStore from "@/stores/client/userStore";
-import {useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {cn} from "@/lib/utils";
 import {useRouter} from "next/navigation";
 import {useMutation, useQueryClient} from "@tanstack/react-query";
 import {removePost} from "@/app/client-api/post/postService";
-import {queryClient} from "@/app/_component/RQProvider";
+import usePostStore from "@/stores/client/postStore";
 
 const Button = styled.button`
   width: 100%;
@@ -25,7 +25,10 @@ export default function DotsMenuBtn({user_seq, postId, imgUrl}:{user_seq:number,
     const {firestoreUser} = useUserStore()
     const isMe =  user_seq == firestoreUser.seq;
     const [menubarOpen, setMenubarOpen] = useState(false);
+    const menubarRef = useRef<HTMLDivElement | null>(null);
     const router = useRouter()
+    const queryClient = useQueryClient();
+    const {setField} = usePostStore()
 
 
     const {mutate: removePostRQ} = useMutation({
@@ -48,7 +51,7 @@ export default function DotsMenuBtn({user_seq, postId, imgUrl}:{user_seq:number,
     })
 
     const handleModify = () => {
-
+        router.push(`/post/update/${postId}`)
     }
     const handleRemove = () => {
         if(confirm('정말 삭제하시겠습니까?')){
@@ -60,10 +63,22 @@ export default function DotsMenuBtn({user_seq, postId, imgUrl}:{user_seq:number,
         setMenubarOpen(!menubarOpen)
     }
 
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menubarRef.current && !menubarRef.current.contains(event.target as Node)) {
+                setMenubarOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [menubarRef]);
     return (
-        <div className={'dots-menubar absolute'} style={{top: '-20px', right: '26px'}}>
+        <div ref={menubarRef} className={'dots-menubar absolute'} style={{top: '15px', right: '15px'}}>
             <BsThreeDotsVertical onClick={handleMenubarOpen}/>
-            <div className={cn('popover-sheet absolute mt-2 w-32 bg-white rounded-md shadow-lg overflow-hidden', menubarOpen ? 'block' : 'hidden')} style={{top:'20px',right:'-48px'}}>
+            <div className={cn('popover-sheet absolute mt-2 w-32 bg-white rounded-md shadow-lg overflow-hidden', menubarOpen ? 'block' : 'hidden')} style={{top:'20px',right:'-15px'}}>
                 {isMe && <>
                     <Button className={'w-full'} onClick={handleModify}>수정</Button>
                     <MenubarSeparator/>

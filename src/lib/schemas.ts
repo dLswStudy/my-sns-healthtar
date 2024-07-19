@@ -62,14 +62,39 @@ export type GetRecordItemsResponse = {
     item_unit_arr: Array<itemAndUnit>;
 }
 
+type Heart = { time: string, user_seq: number };
+type Comment = { time: string, user_seq: number, content: string };
 export type PostAddSchema = {
     user_seq:number,
     content:string,
     main_photo_url?:string,
-    checked_items?:{[key:string]:boolean}
-    hearts?:[{time:string, user_seq:number}]|[]
-    comments?:[{time:string, user_seq:number, content:string}]|[]
+    checked_ids:{[key:number]:boolean}
+    hearts:Array<Heart>
+    comments:Array<Comment>
+}
+export type PostPutSchema = Omit<PostAddSchema, 'comments' | 'hearts'>  & {
+    post_id:string
+}
+export type PostDetailSchema = Omit<PostAddSchema, 'checked_ids'> & {
+    post_id:string
+    progress_info_arr:Array<ProgressInfo>,
+    profile_image_url:string,
+    nickname:string,
+    createdAt:string,
+    updatedAt:string,
+}
+export type ProgressInfo = {
+    id:number,
+    item:string,
+    goalValue:number,
+    presentValue:number,
+    unit:string
 }
 
 export type SetFirestoreUser = (user: UserSchema) => void;
 
+export type CustomResponse = {
+    message:string,
+    ok:boolean,
+    data?:any
+}
