@@ -4,8 +4,8 @@
   - 달성과정을 글과 사진, 현재 수치를 게시하여 공유하고 정보도 공유하고 서로 응원할 수 있는 SNS 
 - 배포 url: [https://my-sns-healthtar.vercel.app/](https://my-sns-healthtar.vercel.app/)
 - testId: 
-  - dev.lsw91@gmail.com / gpftmxk@W
-  - sp91lsu@gmail.com / gpftmxk@W
+  - dev.lsw91@gmail.com / gpftmxk@W (헬스타@W)
+  - sp91lsu@gmail.com / gpftmxk@W (헬스타@W)
 
 ## 기술 스택
 - Next.js 14
